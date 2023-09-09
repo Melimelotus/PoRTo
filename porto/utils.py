@@ -167,4 +167,17 @@ def format_several(stringsToFormat, **kwargs):
     return formattedStrings, incompleteStrings, skippedStrings
 
 
+def respects_regex_pattern(stringToCheck, patternString):
+    """Predicate. Check if the given string respects the given regex pattern.
+    
+        Args:
+            - stringToCheck: str.
+                String that will be checked.
+            - patternString: str.
+                String of the regex pattern.
+    """
+    compiledPattern = re.compile(patternString)
+    result = compiledPattern.match(stringToCheck)
+    return False if result == None else True
+
 #

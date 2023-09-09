@@ -151,7 +151,7 @@ def get_suffix(string):
 
 def has_suffix(string):
     """Predicate. Check if the given string has a three-lettered suffix."""
-    return respects_regex_pattern(string, nomenclature.suffixRegex)
+    return utils.respects_regex_pattern(string, nomenclature.suffixRegex)
 
 
 def nomenclature_compliance(nodeName):
@@ -212,7 +212,7 @@ def remove_suffix(string):
 
 def respects_camelcase(string):
     """Predicate. Check if the given string respects camelCase."""
-    return respects_regex_pattern(string, nomenclature.camelCaseRegex)
+    return utils.respects_regex_pattern(string, nomenclature.camelCaseRegex)
 
 
 def respects_nomenclature_format(string):
@@ -224,7 +224,7 @@ def respects_nomenclature_format(string):
     Freespace is optional.
     Suffix can only be three letters long.
     """
-    return respects_regex_pattern(string, nomenclature.formatRegex)
+    return utils.respects_regex_pattern(string, nomenclature.formatRegex)
 
 
 def respects_porto_nomenclature(string):
@@ -250,20 +250,6 @@ def respects_porto_nomenclature(string):
         return False
     else:
         return True
-
-
-def respects_regex_pattern(stringToCheck, patternString):
-    """Predicate. Check if the given string respects the given regex pattern.
-    
-        Args:
-            - stringToCheck: str.
-                String that will be checked.
-            - patternString: str.
-                String of the regex pattern.
-    """
-    compiledPattern = re.compile(patternString)
-    result = compiledPattern.match(stringToCheck)
-    return False if result == None else True
 
 
 def suffix_matches_type(nodeName, nodeType):
