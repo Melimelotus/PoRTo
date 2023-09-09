@@ -103,9 +103,40 @@ def add_group_as_parent(targetName, groupName):
     return
 
 
+def create_node(nodeName, nodeType):
+    """Create a node with the given name and type. Skip creation if it exists
+    already.
+
+    Return True if the node was created.
+    Return False if creation was skipped.
+    Raise an error if a node with the same name but a different type is found.
+        
+        Args:
+            - nodeName: str.
+            - nodeType: str.
+    """
+    existenceCheck = check_node_existence(nodeName, nodeType)
+
+    if existenceCheck['exists'] == True and existenceCheck['sameType'] == True:
+        # Skip
+        return False
+    elif existenceCheck['exists'] == True and existenceCheck['sameType'] == False:
+        # Conflict!
+        msg="# create_node() - conflict in scene. A node with the same name but a different type exists already."
+        raise TypeError(msg)
+
+    cmds.createNode(nodeType, name = nodeName)
+
+    return True
+
+
 def check_node_existence(nodeName, nodeType):
     """Check if a node of the given name and type exists already. Return a
     dic holding the results of each check.
+
+        Args:
+            - nodeName: str.
+            - nodeType: str.
 
         Returns:
             - resultDic: dic.
@@ -116,12 +147,11 @@ def check_node_existence(nodeName, nodeType):
 
     if exists:
         currentType = get_node_type(nodeName)
-        sameType = currentType == nodeType
     else:
-        sameType = False
+        currentType = None
     
     resultDic = {'exists': exists,
-                 'sameType': sameType}
+                 'sameType': currentType == nodeType}
     return resultDic
 
 
@@ -234,6 +264,18 @@ def hide_shapes_from_history(nodeName):
     return
 
 
+def node_exists(nodeName, nodeType):
+    """Return True if the node exists, None if there is a node with a different
+    type, False if it does not exist."""
+    existenceCheck = check_node_existence(nodeName, nodeType)
+
+    if existenceCheck['exists'] == False:
+        return False
+    elif existenceCheck['sameType'] == False:
+        return None
+    return True
+
+
 def set_default_value(attributePath, value):
     """Set the attribute default's value to the specified value.
     
@@ -272,9 +314,25 @@ def rename_shapes(nodeName):
     return
 
 
+def parent(child, parent):
+    """Parent the child object to the parent object.
+    
+        Args:
+            - child: str.
+            - parent: str.
+    """
+    relatives = cmds.listRelatives(child, parent=True)
+
+    if relatives==None: currentParent=None
+    else: currentParent=relatives[0]
+
+    if not currentParent == parent:
+        cmds.parent(child, parent)
+    return
+
 
 def unparent(obj):
-    """Unparents object if it is not already at root level."""
+    """Unparent object if it is not already at root level."""
     if not cmds.listRelatives(obj, parent=True) == None:
         cmds.parent(obj, world=True)
     return

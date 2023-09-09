@@ -1,7 +1,9 @@
-"""Classes of objects used in PoRTo."""
-
+"""Classes of rigging modules used in PoRTo."""
 
 from data import nomenclature
+from data import portoPreferences
+import mayaUtils
+import portoScene
 import utils
 
 
@@ -87,17 +89,23 @@ class PortoModule(object):
 
     def __init__(self, side, name, parent=None):
         msg = ["# PortoModule class construction - "]
-        # Check side validity
+        # Checks
         if not side in nomenclature.sides:
             msg.append("side attribute is not one of the allowed values: {values}".format(
-                values=str(nomenclature.sides)
-            ))
+                values=str(nomenclature.sides))
+                )
             raise ValueError(''.join(msg))
-        
-        # Check name validity
-        if not utils.respects_regex_pattern(name, nomenclature.allowedCharsRegex):
+
+        if not isinstance(side, str):
+            msg.append("name must be a string.")
+            raise TypeError(''.join(msg))
+        elif not utils.respects_regex_pattern(name, nomenclature.allowedCharsRegex):
             msg.append("name has invalid characters.")
             raise ValueError(''.join(msg))
+        
+        if not parent == None and not isinstance(parent, str):
+            msg.append("parent must be None or a string.")
+            raise TypeError(''.join(msg))
         
         # Set attrs
         self.side=side
@@ -112,6 +120,85 @@ class PortoModule(object):
             className = self.__class__.__name__,
             attributes = str(self.__dict__)[1:-1])
         return msg
+    
+    def build_module(self):
+        """Build the module's root hierarchy.
+        
+        Create and parent the root group.
+        Create and parent the placement group.
+        """
+        self.create_root_group()
+        self.parent_module()
+        self.create_and_parent_placement_group()
+        return
+    
+    def create_and_parent_placement_group(self):
+        """Create and parent the module's placement group if it does not exist already."""
+        if not self.exists():
+            raise Exception("# PortoModule.build_placement_group(): root group has not been built yet.")
+        
+        placementGroupName = self.get_placement_group_name()
+
+        mayaUtils.create_node(nodeName = placementGroupName,
+                              nodeType = 'transform')
+        mayaUtils.parent(child = placementGroupName,
+                         parent = self.get_root_group_name())
+        return
+    
+    def create_root_group(self):
+        """Create the module's root group if it does not exist already."""
+        mayaUtils.create_node(nodeName = self.get_root_group_name(),
+                              nodeType = 'transform')
+        return
+
+    def exists(self):
+        """Predicate. Check if the module exists in the scene.
+        
+        Return True if the module's root group exists.
+        Raise an error if there is a node with the same name but a different
+        type.
+        """
+        existence = mayaUtils.node_exists(nodeName = self.get_root_group_name(),
+                                          nodeType = 'transform')
+
+        if existence == None:
+            msg="# PortoModule.exists() - found a node named like the root module but of a different type!"
+            raise TypeError(msg)
+        return existence
+    
+    def get_root_group_name(self):
+        """Return the name of the module's root group."""
+        return "{side}_{name}_grp".format(side=self.side, name=self.name)
+    
+    def get_placement_group_name(self):
+        """Return the name of the module's placement group."""
+        return "{side}_{name}_placement_grp".format(side=self.side, name=self.name)
+    
+    def parent_module(self):
+        """Parent the module. If no parent has been specified, parent to the rig
+        group."""
+        if self.parent==None:
+            # No parent has been specified: parent to the main rigging group
+            # Create the main rigging group if it does not exist already
+            portoScene.build_main_rigging_group()
+            mayaUtils.parent(child = self.get_root_group_name(),
+                             parent = portoPreferences.riggingModulesParentGroup)
+        else:
+            # Check parent existence, skip if not built yet!
+            # TODO
+            mayaUtils.parent(child = self.get_root_group_name(),
+                             parent = self.parent)
+        return
+    
+    def parent_module_to_main_rigging_group(self):
+        """Parent the module to the main rigging group.
+        
+        Create the main rigging group if it does not exist already.
+        """
+        # TODO
+        mainGroup = portoPreferences.riggingModulesParentGroup
+
+        
     #
 
 
