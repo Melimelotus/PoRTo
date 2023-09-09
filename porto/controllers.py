@@ -1,5 +1,4 @@
-"""Collection of functions related to the creation of controllers and their
-hierarchies.
+"""Collection of functions related to the creation of controllers and joints.
 """
 # TODO labellize controllers
 
@@ -8,22 +7,6 @@ from maya import cmds
 from data import curveShapes
 import mayaUtils
 import naming
-
-
-# TODO : WIP
-def create_basic_chain(name):
-    """TODO"""
-    # Create basic chain hierarchy
-    rootGrp = naming.create_group_name_from_string(basename='Root',
-                                                   string=name)
-    positionGrp = naming.create_group_name_from_string(basename='Position',
-                                                       string=name)
-    
-    cmds.createNode('transform', name=rootGrp)
-    cmds.createNode('transform', name=positionGrp)
-    # Create basic chain hierarchy
-    # Create controller of given shape
-    return
 
 
 def create_controller_curve(name, shape, linear=True):

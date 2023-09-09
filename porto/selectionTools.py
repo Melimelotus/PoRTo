@@ -52,7 +52,7 @@ def create_loc_from_selection():
 
     # Create and place locator through the temporary cluster
     locatorName = cmds.spaceLocator()[0]
-    constraints.quick_position(masters=temporaryCluster, follower=locatorName)
+    constraints.quickplace(masters=temporaryCluster, followers=locatorName)
 
     # Clean scene
     cmds.delete(temporaryCluster)

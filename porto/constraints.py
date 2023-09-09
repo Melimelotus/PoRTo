@@ -56,7 +56,9 @@ def apply_and_delete_scale_constraint(masters, follower):
     return
 
 
-def blended_prebound_matrix_constraint():
+def blended_prebound_matrix_constraint(follower, followerRef, masters,
+        mastersRefs, blendAttrName='BlendCns', blendAttrValue=0.5,
+        groupBasename='PreBoundMtxCns', channels=['translate', 'rotate']):
     # TODO
     pass
     return
@@ -173,7 +175,7 @@ def offset_in_target_space(targetSpaceMatrix, currentPositionMatrix,
 
 
 def prebound_matrix_constraint(follower, followerRef, master, masterRef,
-        groupBasename='PreBroundMtxCns', channels=['translate', 'rotate']):
+        groupBasename='PreBoundMtxCns', channels=['translate', 'rotate']):
     """Create a prebound matrix-based constraint from master to a new group
     created above follower.
 
