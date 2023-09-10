@@ -8,7 +8,7 @@ filename_versionRegexFormat.
 """
 
 # -------- GLOBALS -------------------------------------------------------------
-filenameElements = ['character', 'step', 'version']
+filenameElements = ['asset', 'step', 'version']
 fileVersionPadding = 3
 meshGroupName = "mesh"
 riggingModulesGroupName = "rig"
@@ -24,8 +24,8 @@ riggingModulesGroupName = "rig"
     - version: starts with v, V or version; followed by one or several numbers.
     The amount of numbers is defined by versionPadding.
 '''
-filename_characterRegex = "([a-z](?:[a-z]|[0-9](?![a-z])|[A-Z](?![A-Z])){0,})"
+filename_assetRegex = "([a-z](?:[a-z]|[0-9](?![a-z])|[A-Z](?![A-Z])){0,})"
 filename_stepRegex = "([a-z]+)"
-filename_versionRegexFormat = "([vV]|version)([0-9]{versionPadding})"
+filename_versionRegexFormat = "(?:[vV]|version)([0-9]{versionPadding})"
 
 #

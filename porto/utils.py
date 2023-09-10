@@ -167,6 +167,13 @@ def format_several(stringsToFormat, **kwargs):
     return formattedStrings, incompleteStrings, skippedStrings
 
 
+def increment_and_pad(numberToIncrement, padding):
+    """Increment the given number and pad it. Return a string."""
+    incremented = numberToIncrement + 1
+    padded = str(incremented).zfill(padding)
+    return padded
+
+
 def respects_regex_pattern(stringToCheck, patternString):
     """Predicate. Check if the given string respects the given regex pattern.
     
