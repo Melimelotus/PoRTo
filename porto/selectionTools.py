@@ -12,15 +12,15 @@ import mayaUtils
 @mayaUtils.undo_chunk()
 def create_loc_from_selection():
     """Create a locator placed in the middle of the active selection.
+
     Works with transforms and components.
     """
-    messages = ["# create_loc_from_selection() - "]
+    messages=["# create_loc_from_selection() - "]
 
-    # -------- INIT ------------------------------------------------------------
     # Get selected transforms
-    selectedTransforms = cmds.ls(sl = True,
-                                 objectsOnly = True,
-                                 exactType = 'transform')
+    selectedTransforms=cmds.ls(sl=True,
+                               objectsOnly=True,
+                               exactType='transform')
 
     # Get selected components
     '''filterExpand() will look for the following components:
@@ -31,13 +31,13 @@ def create_loc_from_selection():
         - Lattice Points (46)
         - NURBS Surface Face (72)
     '''
-    selectedComponents = cmds.filterExpand(sm = (28, 31, 32, 34, 46, 72))
-    if selectedComponents == None:
-        selectedComponents = []
+    selectedComponents=cmds.filterExpand(sm = (28, 31, 32, 34, 46, 72))
+    if selectedComponents==None:
+        selectedComponents=[]
 
     fullSelection = selectedTransforms + selectedComponents
 
-    # -------- CHECKS ----------------------------------------------------------
+    # Checks
     if not len(fullSelection) > 1:
         messages.append("not enough transforms or components in selection.")
         raise ValueError(''.join(messages))
@@ -46,7 +46,6 @@ def create_loc_from_selection():
         messages.append("too many objects selected.")
         raise ValueError(''.join(messages))
 
-    # -------- WORK ------------------------------------------------------------
     # Create temporary cluster (get average position of selection)
     temporaryCluster = cmds.cluster(fullSelection)
 
@@ -124,37 +123,34 @@ def reverse_selection_order():
 
 def quickplace_selection_single_master():
     """Place all the selected objects like the first one."""
-    
-    messages = ["# quickplace_selection_single_master - "]
+    messages=["# quickplace_selection_single_master() - "]
 
     # Get selection and check validity
-    selectionList = cmds.ls(sl = True,
-                            objectsOnly = True,
-                            exactType = 'transform')
+    selectionList=cmds.ls(sl=True,
+                          objectsOnly=True,
+                          exactType='transform')
 
     if len(selectionList) < 2:
         messages.append("not enough objects selected.")
         raise ValueError(''.join(messages))
 
-    # Get master and followers
-    master = selectionList[0]
-    followers = selectionList[1:]
-
     # Place and leave master selected
-    constraints.quickplace(masters=master,
-                           followers=followers,
-                           channels=['translate', 'rotate'])
-    
+    master=selectionList[0]
+
+    constraints.quickplace(masters = master,
+                           followers = selectionList[1:],
+                           channels = ['translate', 'rotate'])
     cmds.select(master, r = True)
 
     return
 
 
+@mayaUtils.undo_chunk()
 def quickplace_selection_multiple_masters():
     """Place the last selected object at the average placement of the other
     selected objects."""
 
-    messages = ["# quickplace_selection_multiple_masters - "]
+    messages = ["# quickplace_selection_multiple_masters() - "]
 
     # Get selection and check validity
     selectionList = cmds.ls(sl = True,

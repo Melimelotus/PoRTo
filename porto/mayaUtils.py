@@ -1,4 +1,4 @@
-"""Collection of basic functions to use in Maya.
+"""Collection of basic functions to use inside Maya.
 This module is meant to be imported in other PoRTo modules.
 If a function needs another module from porto, it does NOT belong here.
 """
@@ -156,13 +156,13 @@ def check_node_existence(nodeName, nodeType):
 
 
 def clean_history(nodeName):
-    """Cleans the history from a node."""
+    """Clean the history from a node."""
     cmds.delete(nodeName, constructionHistory=True)
     return
 
 
 def create_discrete_node(nodeName, nodeType):
-    """Creates a node of the given type with the given name. Sets the node's
+    """Create a node of the given type with the given name and set its
     isHistoricallyInteresting attribute to False.
         
         Args:
@@ -206,10 +206,19 @@ def get_locked_channels(objectToCheck):
     return lockedChannels
 
 
+def get_current_filename():
+    """TODO"""
+    #TODO
+    pass
+    return
+
+
 def get_node_type(nodeName):
-    """Returns the type of the given node name. Will inspect parented Shapes
-    if there are any. This helps avoid being told that DAG objects defined
-    by their shapes are all transforms.
+    """Return the node type of the given node.
+    
+    The function will inspect parented Shapes, if there are any. This helps
+    avoid being told that DAG objects defined by their shapes, like locators,
+    are just transforms.
     """
 
     nodeType = cmds.nodeType(nodeName)
@@ -256,8 +265,8 @@ def get_parents_list(nodeName):
 
 
 def hide_shapes_from_history(nodeName):
-    """Find all the shapes parented under a node and set their
-    isHistoricallyInteresting attribute to False."""
+    """For all shapes parented under a node, set their isHistoricallyInteresting
+    attribute to False."""
     shapes = cmds.listRelatives(nodeName, s = True)
     for shape in shapes:
         cmds.setAttr(shape+'.isHistoricallyInteresting', False)

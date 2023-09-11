@@ -18,13 +18,6 @@ def build_main_rigging_group():
     return
 
 
-# TODO : put in mayautils
-def get_current_filename():
-    """TODO"""
-    #TODO
-    pass
-    return
-
 
 def get_filename_format():
     """Build the expected format for all filenames.
