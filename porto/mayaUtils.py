@@ -6,6 +6,8 @@ If a function needs another module from porto, it does NOT belong here.
 
 from maya import cmds
 
+import utils
+
 
 class undo_chunk(object):
     """Decorator and context manager. Ensure an undoChunk is opened and then
@@ -103,6 +105,25 @@ def add_group_as_parent(targetName, groupName):
     return
 
 
+def break_incoming_connection(attributeFullpath):
+    """Break any incoming connection to an attribute.
+    
+        Args:
+            - attributeFullpath: str.
+                The full path to the attribute.
+                Should be of the format: {nodeName}.{nodeAttr}
+    """
+    # Get incoming connections
+    connections = cmds.listConnections(attributeFullpath,
+                                       source=True,
+                                       plugs=True)
+    # Break
+    if connections:
+        for connection in connections:
+            cmds.disconnectAttr(connection, attributeFullpath)
+    return
+
+
 def create_node(nodeName, nodeType):
     """Create a node with the given name and type. Skip creation if it exists
     already.
@@ -161,6 +182,28 @@ def clean_history(nodeName):
     return
 
 
+def reset_matrix_attribute(attributeFullpath, order=4):
+    """Reset the value of a matrix attribute into a simple identity matrix.
+    
+    The identity matrix is a square matrix in which all entries diagonal are 1,
+    and all other entries are 0.
+    A square matrix of order n has n rows and n lines.
+
+        Args:
+            - attributeFullpath: str.
+                The full path to the attribute.
+                Should be of the format: {nodeName}.{nodeAttr}
+            - order: int > 1, default = 4.
+                Amount of rows and lines in the matrix.
+    """
+    # Get an identity matrix of the given order
+    identityMatrix = utils.create_identity_matrix(order)
+
+    # Reset attribute
+    cmds.setAttr(attributeFullpath, identityMatrix, type='matrix')
+    return
+
+
 def create_discrete_node(nodeName, nodeType):
     """Create a node of the given type with the given name and set its
     isHistoricallyInteresting attribute to False.
@@ -174,6 +217,26 @@ def create_discrete_node(nodeName, nodeType):
     """
     cmds.createNode(nodeType, name=nodeName)
     cmds.setAttr(nodeName + '.isHistoricallyInteresting', 0)
+    return
+
+
+def force_add_attribute(nodeName, attributeName, attributeType, **kwargs):
+    """Forcefully create an attribute on the given node: delete any conflicting
+    attribute and then add the new one.
+    
+        Args:
+            - nodeName: str.
+                Name of the node which will receive the attribute.
+            - attributeName: str.
+                Name of the attribute to create.
+            - attributeType: str.
+                Type of the attribute to create: double, float, message...
+    """
+    # Look for conflicts and delete them
+    if cmds.attributeQuery(attributeName, node=nodeName, exists=True):
+        cmds.deleteAttr(nodeName + '.' + attributeName)
+    # Create attribute
+    cmds.addAttr(nodeName, ln=attributeName, at=attributeType, **kwargs)
     return
 
 

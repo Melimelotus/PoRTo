@@ -1,5 +1,7 @@
 """Classes of rigging modules used in PoRTo."""
 
+from maya import cmds
+
 from data import nomenclature
 from data import portoPreferences
 import mayaUtils
@@ -124,19 +126,21 @@ class PortoModule(object):
     def build_module(self):
         """Build the module's root hierarchy.
         
-        Create and parent the root group.
-        Create and parent the placement group.
+        Create the root group.
+        Create and set a 'parent' attribute on the root group.
+        Try to parent the root group.
+        Create the placement group.
         """
         self.create_root_group()
         self.parent_module()
-        self.create_and_parent_placement_group()
+        self.create_placement_group()
         return
     
-    def create_and_parent_placement_group(self):
-        """Create and parent the module's placement group if it does not exist already."""
+    def create_placement_group(self):
+        """Create the module's placement group."""
         if not self.exists():
             raise Exception("# PortoModule.build_placement_group(): root group has not been built yet.")
-        
+
         placementGroupName = self.get_placement_group_name()
 
         mayaUtils.create_node(nodeName = placementGroupName,
@@ -146,9 +150,26 @@ class PortoModule(object):
         return
     
     def create_root_group(self):
-        """Create the module's root group if it does not exist already."""
-        mayaUtils.create_node(nodeName = self.get_root_group_name(),
+        """Create the module's root group.
+
+        Create and set its 'parentModule' attribute and parent the module to the
+        main rigging group.
+        """
+        rootGroupName = self.get_root_group_name()
+
+        # Create group and attributes
+        mayaUtils.create_node(nodeName = rootGroupName,
                               nodeType = 'transform')
+
+        mayaUtils.force_add_attribute(nodeName=rootGroupName,
+                                      attributeName='parentModule',
+                                      attributeType='message')
+        mayaUtils.force_add_attribute(nodeName=rootGroupName,
+                                      attributeName='parentingOutput',
+                                      attributeType='message')
+
+        # Parent to main rigging group
+        self.parent_module_to_main_rigging_group()
         return
 
     def exists(self):
@@ -169,36 +190,82 @@ class PortoModule(object):
     def get_root_group_name(self):
         """Return the name of the module's root group."""
         return "{side}_{name}_grp".format(side=self.side, name=self.name)
-    
+
     def get_placement_group_name(self):
         """Return the name of the module's placement group."""
         return "{side}_{name}_placement_grp".format(side=self.side, name=self.name)
     
     def parent_module(self):
-        """Parent the module. If no parent has been specified, parent to the rig
-        group."""
+        """Parent the module to its specified parent"""
+        messages = ["# PortoModule class, parent_module() method - "]
         if self.parent==None:
-            # No parent has been specified: parent to the main rigging group
-            # Create the main rigging group if it does not exist already
-            portoScene.build_main_rigging_group()
-            mayaUtils.parent(child = self.get_root_group_name(),
-                             parent = portoPreferences.riggingModulesParentGroup)
-        else:
-            # Check parent existence, skip if not built yet!
-            # TODO
-            mayaUtils.parent(child = self.get_root_group_name(),
-                             parent = self.parent)
+            self.parent_module_to_main_rigging_group()
+            return
+        
+        # Check if the parent module exists
+        parentModuleExists = mayaUtils.node_exists(nodeName = self.parent,
+                                                   nodeType = 'transform')
+        if not parentModuleExists:
+            messages.append("parent does not exist yet. Skipped parenting.")
+            cmds.warning(''.join(messages))
+
+        # Get output of the parent module
+        # TODO
         return
-    
+
     def parent_module_to_main_rigging_group(self):
-        """Parent the module to the main rigging group.
+        """Parent the module to the main rigging group and clean the module's
+        data to erase any trace of a previous parent.
         
         Create the main rigging group if it does not exist already.
+        Reset the 'parent' attribute of the module (in the Maya scene) and
+        cleans any incoming connections from a previous parent.
         """
-        # TODO
-        mainGroup = portoPreferences.riggingModulesParentGroup
+        rootGroupName = self.get_root_group_name()
 
+        # Parent to the main rigging group
+        portoScene.build_rig_modules_group()
+        mayaUtils.parent(child = self.get_root_group_name(),
+                         parent = portoScene.get_rig_modules_group_name())
         
+        # Connect to the module's parentModule message attribute.
+        rigGroupMessage = '{rigGroupName}.message'.format(
+            rigGroupName=portoScene.get_rig_modules_group_name())
+        parentModuleAttr = '{rootGroupName}.parentModule'.format(
+            rootGroupName=rootGroupName)
+        
+        cmds.connectAttr(rigGroupMessage, parentModuleAttr, f=True)
+
+        # Remove any incoming offsetParentMatrix and reset values
+        offsetParentMatrix = '{rootGroupName}.offsetParentMatrix'.format(
+            rootGroupName=rootGroupName)
+        mayaUtils.break_incoming_connection(offsetParentMatrix)
+        mayaUtils.reset_matrix_attribute(offsetParentMatrix)
+
+        return
+
+    def publish_module(self):
+        """Publish the module.
+        
+        Delete placementGroup.
+        Replace the parenting system: instead of using an offsetParentMatrix,
+        directly connect the module to its parent.
+        """
+        # Delete placementGroup
+        # TODO
+
+        # Parent to the parent module
+        if self.parent==None:
+            self.parent_module_to_main_rigging_group()
+        else:
+            # Check parent existence: RAISE AN ERROR IF IT DOES NOT EXIST
+            # "publish aborted: parent does not exist in the scene."
+            # Get parent module's parentingOutput incoming connection
+            # Connect to that node
+            # Clean offsetParentMatrix connections
+            # TODO
+            pass
+        return
     #
 
 

@@ -16,10 +16,42 @@ def combine_dics(dicsToCombine):
     return newDic
 
 
+def create_identity_matrix(order):
+    """Create an identity matrix of the given order. Return a list of values.
+    
+    The identity matrix is a square matrix in which all entries diagonal are 1,
+    and all other entries are 0.
+    A square matrix of order n has n rows and n lines.
+    
+        Args:
+            - order: int > 1.
+                Amount of rows and lines in the matrix.
+    """
+    messages = ["# create_identity_matrix - "]
+
+    # Checks
+    if not isinstance(order, int):
+        messages.append("'order' argument must be an integer.")
+        raise TypeError(''.join(messages))
+    if order < 0:
+        messages.append("'order' argument must be positive.")
+        raise TypeError(''.join(messages))
+    
+    # Create matrix
+    identityMatrix = order**2 * [0]
+
+    # Set diagonals
+    diagonals = [(order+1) * i
+                 for i in range(0, order)]
+    for diagonal in diagonals:
+        identityMatrix[diagonal] = 1
+
+    return identityMatrix
+
+
 def get_dic_keys_from_value(value, sourceDic):
     """From a value, gets the corresponding keys in a dictionary."""
-    keys = [key
-            for key in sourceDic
+    keys = [key for key in sourceDic
             if sourceDic[key] == value]
     return keys
 
