@@ -8,7 +8,7 @@ filename_versionRegexFormat.
 """
 
 # -------- GLOBALS -------------------------------------------------------------
-filenameElements = ['asset', 'step', 'version']
+filenameElements = ['asset','step','version'] # Extension is added automatically
 fileVersionPadding = 3
 meshGroupName = "mesh"
 riggingModulesGroupName = "rig"
@@ -26,6 +26,6 @@ riggingModulesGroupName = "rig"
 '''
 filename_assetRegex = "([a-z](?:[a-z]|[0-9](?![a-z])|[A-Z](?![A-Z])){0,})"
 filename_stepRegex = "([a-z]+)"
-filename_versionRegexFormat = "(?:[vV]|version)([0-9]{versionPadding})"
+filename_versionRegexFormat = "((?:[vV]|version)(?:[0-9]{versionPadding}))"
 
 #

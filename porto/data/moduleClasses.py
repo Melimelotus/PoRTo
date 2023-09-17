@@ -75,21 +75,33 @@ class PortoName(object):
 class PortoModule(object):
     """Define a PoRTo rigging module.
     
-    All modules have a side (left, right, center...), and a name.
-    They can be parented to another module or left at the root of the rig group.
+    All modules have a 'name'. This name will be reused in all or most node
+    setups that depend or act onto the module.
+    All modules have a 'side' that roughly indicates its position in the scene:
+    left, right, center, unsided... Left/right modules can be mirrored.
+    All modules are either parented directly under the rig group or under
+    another module.
+    The 'parentModule' attribute of a module defines who the module should be
+    parented to.
+    The 'parentingOutput' attribute of a module defines which node of the module
+    system should be used to drive children.
     
         Attrs:
+            - name: str.
+                The name of the module.
+                Allowed characters: lowercase and uppercase letters, numbers.
             - side: str.
                 The side of the module.
-            - name: str.
-                The name of the module. Allowed characters: lowercase letters,
-                uppercase letters, numbers.
-            - parent: str, default = None.
+                Allowed values are listed in data/nomenclature.
+            - parentModule: PortoModule, default = None.
                 The name of the parent module. If None, the module will stay at
                 the root of the rig group.
+            - parentingOutput: str, default = None.
+                The node that will be used to drive children. If None, the root
+                group will be used.
     """
 
-    def __init__(self, side, name, parent=None):
+    def __init__(self, name, side, parentModule=None, parentingOutput=None):
         msg = ["# PortoModule class construction - "]
         # Checks
         if not side in nomenclature.sides:
@@ -99,20 +111,25 @@ class PortoModule(object):
             raise ValueError(''.join(msg))
 
         if not isinstance(side, str):
-            msg.append("name must be a string.")
+            msg.append("'name' attr must be a string.")
             raise TypeError(''.join(msg))
         elif not utils.respects_regex_pattern(name, nomenclature.allowedCharsRegex):
-            msg.append("name has invalid characters.")
+            msg.append("'name' attr has invalid characters.")
             raise ValueError(''.join(msg))
         
-        if not parent == None and not isinstance(parent, str):
-            msg.append("parent must be None or a string.")
+        if not parentModule == None and not isinstance(parentModule, PortoModule):
+            msg.append("'parentModule' attr must be None or a PortoModule.")
+            raise TypeError(''.join(msg))
+        
+        if not parentingOutput == None and not isinstance(parentingOutput, str):
+            msg.append("'parentingOutput' attr must be None or a string.")
             raise TypeError(''.join(msg))
         
         # Set attrs
         self.side=side
         self.name=name
-        self.parent=parent
+        self.parentModule=parentModule
+        self.parentingOutput=parentingOutput
 
         return
 
@@ -126,9 +143,7 @@ class PortoModule(object):
     def build_module(self):
         """Build the module's root hierarchy.
         
-        Create the root group.
-        Create and set a 'parent' attribute on the root group.
-        Try to parent the root group.
+        Create and parent the root group.
         Create the placement group.
         """
         self.create_root_group()
@@ -138,9 +153,6 @@ class PortoModule(object):
     
     def create_placement_group(self):
         """Create the module's placement group."""
-        if not self.exists():
-            raise Exception("# PortoModule.build_placement_group(): root group has not been built yet.")
-
         placementGroupName = self.get_placement_group_name()
 
         mayaUtils.create_node(nodeName = placementGroupName,
@@ -150,11 +162,7 @@ class PortoModule(object):
         return
     
     def create_root_group(self):
-        """Create the module's root group.
-
-        Create and set its 'parentModule' attribute and parent the module to the
-        main rigging group.
-        """
+        """Create the module's root group and its attributes."""
         rootGroupName = self.get_root_group_name()
 
         # Create group and attributes
@@ -167,9 +175,6 @@ class PortoModule(object):
         mayaUtils.force_add_attribute(nodeName=rootGroupName,
                                       attributeName='parentingOutput',
                                       attributeType='message')
-
-        # Parent to main rigging group
-        self.parent_module_to_main_rigging_group()
         return
 
     def exists(self):
@@ -198,18 +203,47 @@ class PortoModule(object):
     def parent_module(self):
         """Parent the module to its specified parent"""
         messages = ["# PortoModule class, parent_module() method - "]
-        if self.parent==None:
+
+        # Parent to main rig group if no parentModule has been specified
+        if self.parentModule==None:
             self.parent_module_to_main_rigging_group()
             return
-        
-        # Check if the parent module exists
-        parentModuleExists = mayaUtils.node_exists(nodeName = self.parent,
-                                                   nodeType = 'transform')
-        if not parentModuleExists:
+
+        # Check existence of parentModule. Warn and skip if it does not exist.
+        if not self.parentModule.exists():
             messages.append("parent does not exist yet. Skipped parenting.")
             cmds.warning(''.join(messages))
+            return
 
-        # Get output of the parent module
+        # Connect message attr to parentModule attr
+        messageAttr = '{parentRootGroup}.message'.format(
+            parentRootGroup = self.parentModule.get_root_group_name())
+        parentModuleAttr = '{rootGroup}.parentModule'.format(
+            rootGroup = self.get_root_group_name())
+        
+        cmds.connectAttr(messageAttr, parentModuleAttr, f=True)
+
+        # Get the parentingOutput attribute of the parent module: which node
+        # should our module really follow?
+        parentOutput = self.parentModule.parentingOutput
+
+        if parentOutput == None:
+            # Follow root group.
+            '''Connect to offset parentMatrix attribute'''
+            pass
+            return
+        
+        # Check existence of the node specified in parentOutput.
+        # Warn and skip if it does not exist.
+        parentOutputExists = False #TODO
+
+        if not parentOutputExists:
+            messages.append("parent does not exist yet. Skipped parenting.")
+            cmds.warning(''.join(messages))
+            return
+
+        # Parent
+        '''Connect to offset parentMatrix attribute'''
         # TODO
         return
 
@@ -224,13 +258,13 @@ class PortoModule(object):
         rootGroupName = self.get_root_group_name()
 
         # Parent to the main rigging group
-        portoScene.build_rig_modules_group()
+        portoScene.create_rig_modules_group()
         mayaUtils.parent(child = self.get_root_group_name(),
-                         parent = portoScene.get_rig_modules_group_name())
+                         parent = portoPreferences.riggingModulesGroupName)
         
         # Connect to the module's parentModule message attribute.
         rigGroupMessage = '{rigGroupName}.message'.format(
-            rigGroupName=portoScene.get_rig_modules_group_name())
+            rigGroupName = portoPreferences.riggingModulesGroupName)
         parentModuleAttr = '{rootGroupName}.parentModule'.format(
             rootGroupName=rootGroupName)
         
@@ -255,7 +289,7 @@ class PortoModule(object):
         # TODO
 
         # Parent to the parent module
-        if self.parent==None:
+        if self.parentModule==None:
             self.parent_module_to_main_rigging_group()
         else:
             # Check parent existence: RAISE AN ERROR IF IT DOES NOT EXIST

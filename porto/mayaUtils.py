@@ -270,10 +270,21 @@ def get_locked_channels(objectToCheck):
 
 
 def get_current_filename():
-    """TODO"""
-    #TODO
-    pass
-    return
+    """Return the name of the current file."""
+    filename = cmds.file(query=True, sceneName=True, shortName=True)
+    if filename == '':
+        # Scene has not been saved yet.
+        return None
+    return filename
+
+
+def get_current_file():
+    """Return the name and full path of the current file."""
+    file = cmds.file(query=True, sceneName=True)
+    if file == '':
+        # Scene has not been saved yet.
+        return None
+    return file
 
 
 def get_node_type(nodeName):
