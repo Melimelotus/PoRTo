@@ -19,9 +19,7 @@ def create_loc_from_selection():
     messages=["# create_loc_from_selection() - "]
 
     # Get selected transforms
-    selectedTransforms=cmds.ls(sl=True,
-                               objectsOnly=True,
-                               exactType='transform')
+    transforms=cmds.ls(sl=True, objectsOnly=True, exactType='transform')
 
     # Get selected components
     '''filterExpand() will look for the following components:
@@ -32,38 +30,34 @@ def create_loc_from_selection():
         - Lattice Points (46)
         - NURBS Surface Face (72)
     '''
-    selectedComponents=cmds.filterExpand(sm = (28, 31, 32, 34, 46, 72))
-    if selectedComponents==None:
-        selectedComponents=[]
-
-    fullSelection = selectedTransforms + selectedComponents
+    components=cmds.filterExpand(sm = (28, 31, 32, 34, 46, 72))
+    if components==None: components=[]
 
     # Checks
-    if not len(fullSelection) > 0:
+    if not len(transforms) > 0 and not len(components) > 0:
         messages.append("not enough transforms or components in selection.")
         raise ValueError(''.join(messages))
 
-    if len(selectedTransforms) >= 1000 or len(selectedComponents) >= 1000:
+    if len(transforms) >= 1000 or len(components) >= 1000:
         messages.append("too many objects selected.")
         raise ValueError(''.join(messages))
-
-    # Create temporary cluster (get average position of selection)
-    temporaryCluster = cmds.cluster(fullSelection)
-
-    # Prompt user for name
-    promptMsg = ['Enter a name for the locator\n',
-                 'Skipping will let Maya choose a name.']
-    locatorName = mayaUtils.prompt_for_text(title='Name',
-                                            message=''.join(promptMsg))
     
-    # Create and place locator through the temporary cluster
-    cmds.spaceLocator(name=locatorName)
-    constraints.quickplace(masters=temporaryCluster, followers=locatorName)
+    # Combine into a flattened list
+    sel = mayaUtils.flatten_components_list(transforms + components)
 
-    # Clean scene
-    cmds.delete(temporaryCluster)
+    # Prompt user for a name
+    promptMsg = ['Enter a name for the locator.\n',
+                 'An empty string will result in a default name.']
+    name = mayaUtils.prompt_for_text(title='Name',
+                                     message=''.join(promptMsg))
+    if name == None:
+        return
+    
+    # Create and place
+    trueName = cmds.spaceLocator(name=name)[0]
+    cmds.xform(trueName, translation =  mayaUtils.get_center_position(sel))
 
-    return locatorName
+    return trueName
 
 
 @mayaUtils.undo_chunk()
@@ -124,7 +118,12 @@ def create_hierarchy_from_selection_order():
 
 def reverse_selection_order():
     """Reverse the selection order."""
-    cmds.select(reversed(cmds.ls(sl=True)), replace=True)
+    sel = cmds.ls(sl=True)
+    sel.reverse()
+    cmds.select(sel, replace=True)
+    # Make sure the user knows what happened
+    message = "reversed selection order. First element: '{}'".format(sel[0])
+    cmds.warning(message)
     return
 
 

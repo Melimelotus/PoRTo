@@ -5,6 +5,8 @@ If a function needs another module from porto, it does NOT belong here.
 
 from maya import cmds
 
+import re
+
 import utils
 
 
@@ -155,6 +157,55 @@ def create_node(nodeName, nodeType):
     return True
 
 
+def flatten_components_list(listToFlatten):
+    """Flatten a list of components: make sure that each component is explicitly
+    listed.
+    
+    When querying a list of selected components, Maya has a tendency to compact
+    indexes whenever possible. This means that Maya can return something
+    like this: ['obj.vtx[0:15]', 'obj.vtx[20]'].
+    This is not practical when you need to iterate over components.
+    This function aims to flatten any list holding compacted components, by
+    explicitly listing each of them.
+
+    ['obj.vtx[0:3]'] >>>> ['obj.vtx[0]','obj.vtx[1]','obj.vtx[2]','obj.vtx[3]']
+
+        Args:
+            - listToFlatten: list of str.
+    """
+    flattened = []
+    # Regex: '{object}.{component}[{startIndex}:{endIndex}]'
+    '''Three capture groups:
+        - {object}.{component}
+        - {startIndex}
+        - {endIndex}
+    '''
+    regex = re.compile('^([a-zA-Z|_1-9]+\.[a-z]+)\[([1-9]+)[:]([1-9]+)\]$')
+    
+    # Check each element and flatten if necessary
+    for element in listToFlatten:
+        match = regex.match(element)
+
+        if match == None:
+            flattened.append(element)
+            continue
+
+        # Element is compacted and corresponds to multiple components. Flatten!
+        componentName = match.group(1)
+        startIndex = int(match.group(2))
+        endIndex = int(match.group(3))
+        
+        # Build flat names
+        for index in range(startIndex, endIndex + 1):
+            flatName = '{componentName}[{index}]'.format(
+                componentName=componentName,
+                index=index)
+            flattened.append(flatName)
+        #
+
+    return flattened
+
+
 def force_add_attribute(nodeName, attributeName, attributeType, **kwargs):
     """Forcefully create an attribute on the given node: delete any conflicting
     attribute and then add the new one.
@@ -173,6 +224,96 @@ def force_add_attribute(nodeName, attributeName, attributeType, **kwargs):
     # Create attribute
     cmds.addAttr(nodeName, ln=attributeName, at=attributeType, **kwargs)
     return
+
+
+def get_average_position(objList):
+    """Get the average position of a list of objects. Return a list holding
+    three floats: [tx, ty, tz]."""
+    # Checks
+    if not isinstance(objList, list):
+        raise TypeError('# get_average_position() - arg must be a list.')
+    if objList == []:
+        return [0.0,0.0,0.0]
+    
+    # Flatten list ( ['obj.vtx[0:5]'] >>>> ['obj.vtx[0]', 'obj.vtx[1]', ...] )
+    flattenedList = flatten_components_list(objList)
+
+    # Dictionary holding all values for each channel
+    channels = ['tx', 'ty', 'tz']
+    translates = {channel: [] for channel in channels}
+
+    for obj in flattenedList:
+        values = cmds.xform(obj, query=True, translation=True, worldSpace=True)
+        for channel, value in zip(channels, values):
+            translates[channel].append(value)
+    # TODO: test, is that allowed?
+
+    # OLD
+    '''txValues = []
+    tyValues = []
+    tzValues = []
+    for obj in flattenedList:
+        values = cmds.xform(obj,
+                            query=True,
+                            translation=True,
+                            worldSpace=True)
+        # Unpack
+        txValues.append(values[0])
+        tyValues.append(values[1])
+        tzValues.append(values[2])
+
+    # Calculate means
+    amount = len(flattenedList)
+    means = []
+    for values in [txValues, tyValues, tzValues]:
+        means.append( sum(values) / amount )
+    return means'''
+
+
+def get_center_position(objList):
+    """Get the center position of a list of objects. Return a list holding
+    three floats: [tx, ty, tz]."""
+    # Checks
+    if not isinstance(objList, list):
+        raise TypeError('# get_center_position() - arg must be a list.')
+    if objList == []:
+        return [0.0,0.0,0.0]
+    
+    # Dictionary holding min and max values for each channel
+    bounds = {}
+    channels = ['tx', 'ty', 'tz']
+    flattenedList = flatten_components_list(objList)
+
+    # Initialize min/max values from the first object in the list
+    values = cmds.xform(flattenedList[0],
+                        query=True,
+                        translation=True,
+                        worldSpace=True)
+
+    for value, channel in zip(values, channels):
+        bounds[channel] = [value, value]
+
+    flattenedList.pop(0)
+
+    # Iterate through all objects and update bounds when necessary
+    for obj in flattenedList:
+        values = cmds.xform(obj,
+                            query=True,
+                            translation=True,
+                            worldSpace=True)
+        # Do these values beat the current bounds?
+        for value, channel in zip(values, channels):
+            if value < bounds[channel][0]:
+                # New min!
+                bounds[channel][0] = value
+            if value > bounds[channel][1]:
+                # New max!
+                bounds[channel][1] = value
+
+    # center coords = (channelmin + channelmax) / 2
+    centerCoords = [(bounds[channel][0] + bounds[channel][1])/2
+                    for channel in channels]
+    return centerCoords
 
 
 def get_locked_channels(objectToCheck):
@@ -301,7 +442,7 @@ def node_exists(nodeName, nodeType):
 
 def prompt_for_text(title, message):
     """Display a prompt window that asks the user for a text input. Return the
-    user's input.
+    user's input. Return None if the user dismissed the prompt.
     
         Args:
             - title: str.
@@ -318,7 +459,7 @@ def prompt_for_text(title, message):
 
     if result == 'OK':
         return cmds.promptDialog(query=True, text=True)
-    return ''
+    return None
 
 
 def set_default_value(attributePath, value):
