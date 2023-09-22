@@ -18,17 +18,4 @@ def create_empty_module_from_plc(placement):
     moduleName = ''
     return moduleName
 
-
-def create_basic_chain_module(name):
-    """TODO"""
-    # Create basic chain hierarchy
-    rootGrp = naming.create_group_name_from_string(basename='Root',
-                                                   string=name)
-    positionGrp = naming.create_group_name_from_string(basename='Position',
-                                                       string=name)
-    
-    cmds.createNode('transform', name=rootGrp)
-    cmds.createNode('transform', name=positionGrp)
-    # Create basic chain hierarchy
-    # Create controller of given shape
-    return
+#

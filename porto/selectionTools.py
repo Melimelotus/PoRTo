@@ -11,7 +11,8 @@ import mayaUtils
 
 @mayaUtils.undo_chunk()
 def create_loc_from_selection():
-    """Create a locator placed in the middle of the active selection.
+    """Create a locator placed in the middle of the active selection. Prompt the
+    user for a name.
 
     Works with transforms and components.
     """
@@ -38,7 +39,7 @@ def create_loc_from_selection():
     fullSelection = selectedTransforms + selectedComponents
 
     # Checks
-    if not len(fullSelection) > 1:
+    if not len(fullSelection) > 0:
         messages.append("not enough transforms or components in selection.")
         raise ValueError(''.join(messages))
 
@@ -49,8 +50,14 @@ def create_loc_from_selection():
     # Create temporary cluster (get average position of selection)
     temporaryCluster = cmds.cluster(fullSelection)
 
+    # Prompt user for name
+    promptMsg = ['Enter a name for the locator\n',
+                 'Skipping will let Maya choose a name.']
+    locatorName = mayaUtils.prompt_for_text(title='Name',
+                                            message=''.join(promptMsg))
+    
     # Create and place locator through the temporary cluster
-    locatorName = cmds.spaceLocator()[0]
+    cmds.spaceLocator(name=locatorName)
     constraints.quickplace(masters=temporaryCluster, followers=locatorName)
 
     # Clean scene
@@ -117,7 +124,7 @@ def create_hierarchy_from_selection_order():
 
 def reverse_selection_order():
     """Reverse the selection order."""
-    cmds.select(cmds.ls(sl=True).reverse(), replace=True)
+    cmds.select(reversed(cmds.ls(sl=True)), replace=True)
     return
 
 

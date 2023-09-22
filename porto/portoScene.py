@@ -113,7 +113,7 @@ def get_current_asset_name():
 
 def get_file_extension(filename):
     """Get the extension from the filename."""
-    return decompose_porto_filename(filename).replace('.', '')
+    return decompose_porto_filename(filename)['extension'].replace('.', '')
 
 
 def get_file_version(filename):
@@ -159,6 +159,7 @@ def increment_save():
     # Increment version and update dic
     previousVersion = get_file_version(filename)
     previousVersionFullStr = decomposed['version']
+    print(previousVersionFullStr)
 
     newVersion = int(previousVersion) + 1
     newVersion = str(newVersion).zfill(portoPreferences.fileVersionPadding)

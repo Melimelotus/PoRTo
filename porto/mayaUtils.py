@@ -2,7 +2,6 @@
 This module is meant to be imported in other PoRTo modules.
 If a function needs another module from porto, it does NOT belong here.
 """
-# TODO: isDag predicate
 
 from maya import cmds
 
@@ -25,48 +24,6 @@ class undo_chunk(object):
                 return func(*args, **kwargs)
         return wrapper
     #
-
-
-# TODO: WIP
-def RELAUNCHABLE_add_group_as_parent(targetName, groupName):
-    """Create a group and give it the coordinates of the target. The target
-    will then be parented under that group.
-
-        Args:
-            - targetName: str.
-                Name of the node that needs to be parented.
-            - groupName: str.
-                Name of the group that will be created.
-    """
-    # Existence checks
-    existenceDic = check_node_existence(groupName, 'transform')
-
-    if existenceDic['exists'] and not existenceDic['hasGivenType']:
-        # Node exists but is not a transform: error!
-        raise TypeError('# add_group_as_parent: "{groupName}" exists already but is not a transform.'.format(
-            groupName=groupName))
-    elif existenceDic['exists'] and existenceDic['hasGivenType']:
-        # Node exists and is a transform
-        # Is the target parented to it already?
-        currentParent = cmds.listRelatives(targetName, parent=True)
-
-        if currentParent==None: isParent=False
-        elif not currentParent[0]==groupName: isParent=False
-        else: isParent=True
-
-        if isParent:
-            # Clean and recreate node
-            recreate_node(groupName, 'transform') # TODO
-            return
-        else:
-            # Error!
-            raise Exception('# add_group_as_parent: "{groupName}" exists already but the target "{targetName}" is not parented under it.'.format(
-                groupName=groupName,
-                targetName=targetName))
-        
-    # Node does not exist: creation
-    add_group_as_parent(targetName, groupName)
-    return
 
 
 def add_group_as_parent(targetName, groupName):
@@ -124,33 +81,6 @@ def break_incoming_connection(attributeFullpath):
     return
 
 
-def create_node(nodeName, nodeType):
-    """Create a node with the given name and type. Skip creation if it exists
-    already.
-
-    Return True if the node was created.
-    Return False if creation was skipped.
-    Raise an error if a node with the same name but a different type is found.
-        
-        Args:
-            - nodeName: str.
-            - nodeType: str.
-    """
-    existenceCheck = check_node_existence(nodeName, nodeType)
-
-    if existenceCheck['exists'] == True and existenceCheck['sameType'] == True:
-        # Skip
-        return False
-    elif existenceCheck['exists'] == True and existenceCheck['sameType'] == False:
-        # Conflict!
-        msg="# create_node() - conflict in scene. A node with the same name but a different type exists already."
-        raise TypeError(msg)
-
-    cmds.createNode(nodeType, name = nodeName)
-
-    return True
-
-
 def check_node_existence(nodeName, nodeType):
     """Check if a node of the given name and type exists already. Return a
     dic holding the results of each check.
@@ -182,28 +112,6 @@ def clean_history(nodeName):
     return
 
 
-def reset_matrix_attribute(attributeFullpath, order=4):
-    """Reset the value of a matrix attribute into a simple identity matrix.
-    
-    The identity matrix is a square matrix in which all entries diagonal are 1,
-    and all other entries are 0.
-    A square matrix of order n has n rows and n lines.
-
-        Args:
-            - attributeFullpath: str.
-                The full path to the attribute.
-                Should be of the format: {nodeName}.{nodeAttr}
-            - order: int > 1, default = 4.
-                Amount of rows and lines in the matrix.
-    """
-    # Get an identity matrix of the given order
-    identityMatrix = utils.create_identity_matrix(order)
-
-    # Reset attribute
-    cmds.setAttr(attributeFullpath, identityMatrix, type='matrix')
-    return
-
-
 def create_discrete_node(nodeName, nodeType):
     """Create a node of the given type with the given name and set its
     isHistoricallyInteresting attribute to False.
@@ -218,6 +126,33 @@ def create_discrete_node(nodeName, nodeType):
     cmds.createNode(nodeType, name=nodeName)
     cmds.setAttr(nodeName + '.isHistoricallyInteresting', 0)
     return
+
+
+def create_node(nodeName, nodeType):
+    """Create a node with the given name and type. Skip creation if it exists
+    already.
+
+    Return True if the node was created.
+    Return False if creation was skipped.
+    Raise an error if a node with the same name but a different type is found.
+        
+        Args:
+            - nodeName: str.
+            - nodeType: str.
+    """
+    existenceCheck = check_node_existence(nodeName, nodeType)
+
+    if existenceCheck['exists'] == True and existenceCheck['sameType'] == True:
+        # Skip
+        return False
+    elif existenceCheck['exists'] == True and existenceCheck['sameType'] == False:
+        # Conflict!
+        msg="# create_node() - conflict in scene. A node with the same name but a different type exists already."
+        raise TypeError(msg)
+
+    cmds.createNode(nodeType, name = nodeName)
+
+    return True
 
 
 def force_add_attribute(nodeName, attributeName, attributeType, **kwargs):
@@ -269,15 +204,6 @@ def get_locked_channels(objectToCheck):
     return lockedChannels
 
 
-def get_current_filename():
-    """Return the name of the current file."""
-    filename = cmds.file(query=True, sceneName=True, shortName=True)
-    if filename == '':
-        # Scene has not been saved yet.
-        return None
-    return filename
-
-
 def get_current_file():
     """Return the name and full path of the current file."""
     file = cmds.file(query=True, sceneName=True)
@@ -285,6 +211,15 @@ def get_current_file():
         # Scene has not been saved yet.
         return None
     return file
+
+
+def get_current_filename():
+    """Return the name of the current file."""
+    filename = cmds.file(query=True, sceneName=True, shortName=True)
+    if filename == '':
+        # Scene has not been saved yet.
+        return None
+    return filename
 
 
 def get_node_type(nodeName):
@@ -347,6 +282,11 @@ def hide_shapes_from_history(nodeName):
     return
 
 
+def isDag(nodeName):
+    """Predicate. Return True if the node is a dagNode."""
+    return 'dagNode' in cmds.nodeType(nodeName, inherited=True)
+
+
 def node_exists(nodeName, nodeType):
     """Return True if the node exists, None if there is a node with a different
     type, False if it does not exist."""
@@ -357,6 +297,28 @@ def node_exists(nodeName, nodeType):
     elif existenceCheck['sameType'] == False:
         return None
     return True
+
+
+def prompt_for_text(title, message):
+    """Display a prompt window that asks the user for a text input. Return the
+    user's input.
+    
+        Args:
+            - title: str.
+                Title of the window.
+            - message: str.
+                Message to display in the window.
+    """
+    result = cmds.promptDialog(title=title,
+                               message=message,
+                               button=['OK', 'Cancel'],
+                               defaultButton='OK',
+                               cancelButton='Cancel',
+                               dismissString='Cancel')
+
+    if result == 'OK':
+        return cmds.promptDialog(query=True, text=True)
+    return ''
 
 
 def set_default_value(attributePath, value):
@@ -394,6 +356,28 @@ def rename_shapes(nodeName):
             index = index
         )
         cmds.rename(shape, newName)
+    return
+
+
+def reset_matrix_attribute(attributeFullpath, order=4):
+    """Reset the value of a matrix attribute into a simple identity matrix.
+    
+    The identity matrix is a square matrix in which all entries diagonal are 1,
+    and all other entries are 0.
+    A square matrix of order n has n rows and n lines.
+
+        Args:
+            - attributeFullpath: str.
+                The full path to the attribute.
+                Should be of the format: {nodeName}.{nodeAttr}
+            - order: int > 1, default = 4.
+                Amount of rows and lines in the matrix.
+    """
+    # Get an identity matrix of the given order
+    identityMatrix = utils.create_identity_matrix(order)
+
+    # Reset attribute
+    cmds.setAttr(attributeFullpath, identityMatrix, type='matrix')
     return
 
 

@@ -1,4 +1,11 @@
-"""Classes of rigging modules used in PoRTo."""
+"""Classes of rigging modules used in PoRTo.
+
+Rigging modules are premade blocks of nodes that can be created at any time.
+They are meant to simplify the workflow of the rigger: instead of losing time
+with creating the nodes setups, the rigger can let PoRTo do that stuff and focus
+on the placement and hierarchy aspects of the rig.
+Examples of rigging modules include: basic chain, tendon, IK/FK leg, ribbon...
+"""
 
 from maya import cmds
 
@@ -306,37 +313,45 @@ class PortoModule(object):
 class EmptyModule(PortoModule):
     """Define an empty PoRTo rigging module.
 
-    Empty modules can be used for organisation purposes or as placeholders.
+    Empty modules can be used for organisation purposes: they can act as folders
+    in order to gather similar modules together (for example, a "wingPrimaries"
+    under which are parented all the modules dedicated to rigging the primary
+    feathers of a wing).
+    Empty modules can also be used as placeholders.
+    They can also be used for creating custom modules.
     """
-
-    def __init__(self):
-        pass
-        return
+    # The EmptyModule class is not different from a PortoModule and exists
+    # only for distinction purposes.
+    pass
     #
 
-class ChainModule(PortoModule):
-    """Define a chain PoRTo rigging module.
+class ChainModule(PortoModule): # TODO
+    """Define a PoRTo rigging module: basic chain of controllers.
 
     Chain modules can be used to create simple chains of controllers.
 
         Attrs:
-            - side: str.
-                The side of the module.
-            - name: str.
-                The name of the module. Allowed characters: lowercase letters,
-                uppercase letters, numbers.
             - chainLength: int.
                 Length of the chain. A length of 1 means there will be only one
                 controller.
-            - parent: str, default = None.
-                The name of the parent module. If None, the module will stay at
-                the root of the rig group.
     """
 
-    def __init__(self, side, name, chainLength, parent=None):
-        PortoModule.__init__(self, side, name)
+    def __init__(self, side, name, chainLength, parentModule=None, parentingOutput=None):
+        PortoModule.__init__(self, side, name, parentModule, parentingOutput)
         self.chainLength = chainLength
         return
     
+    #
+
+class TendonModule(PortoModule): # TODO
+    """Define a PoRTo rigging module: tendon.
+
+    # TODO
+    """
+
+    def __init__(self, side, name, parentModule=None, parentingOutput=None):
+        PortoModule.__init__(self, side, name, parentModule, parentingOutput)
+        # TODO
+        return
     #
 #
