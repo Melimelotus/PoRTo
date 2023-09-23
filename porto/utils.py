@@ -2,7 +2,6 @@
     If a function is meant to be used in Maya, it does NOT belong here.
     If a function needs another module from porto, it does NOT belong here.
 """
-# TODO : rework format_several
 
 import re
 
@@ -83,120 +82,70 @@ def exchange_dic_items(dic):
     return newDic
 
 
-def format_several(stringsToFormat, **kwargs):
-    """Formats several strings with the given arguments.
-        > The Python function str.format() can take any number of kwargs,
-        including keys that are not present in the str.
-        However, it will raise an error if the str holds a key that has not been
-        given as an argument.
-            ---> str.format() accepts this:
-                    'aeiou{key}'.format(key = 'a', missingKey = 'b')
-            ---> but it raises an error for that:
-                    'aeiou{key}{missingKey}'.format(key = 'a')
-                
-        > This function allows both situations.
-        It will format anything possible, as much as possible.
+def format_several(stringsList, **kwargs):
+    """Format several strings with the given arguments.
+    
+    The Python function str.format() can take any number of kwargs, including
+    keys that are not present in the str.
+    However, it will raise an error if the str holds a key that has not been
+    given as an argument.
+        > OK       'something{key}'.format(key=..., missingKey=...)
+        > ERROR    'something{key}{missingKey}'.format(key=...)
+    This function allows both situations.
 
         Args:
-            - stringsToFormat: list of str.
+            - stringsList: list of str.
                 List of str to format.
             - **kwargs: str.
                 Keys and values to use as arguments for formatting.
                 Any "{key}" found within the str will be replaced with "value".
-
-        Returns:
-            - formattedStrings: list of str.
-                List of all strings that were modified.
-                Includes those who are still holding keys that could not be
-                formatted with the given kwargs.
-            - incompleteStrings: list of str.
-                List of strings that are holding keys that could not be
-                replaced.
-            - skippedStrings: list of str.
-                List of strings that were skipped.
     """
-    keyRegex = r"{\w+}"
+    msg = ["# formatSeveral() - "]
 
-    # ---------------- CHECKS --------------------------------------------------
-    # Checking validity of stringsToFormat
-    if not isinstance(stringsToFormat, list):
-        raise TypeError(
-            '# formatSeveral(): stringsToFormat should be a list.')
-    if stringsToFormat == []:
-        raise ValueError(
-            '# formatSeveral(): stringsToFormat is empty.')
-    for stringToFormat in stringsToFormat:
+    # Checks
+    if not isinstance(stringsList, list):
+        msg.append("stringsToFormat should be a list.")
+        raise TypeError(''.join(msg))
+    
+    for stringToFormat in stringsList:
         if not isinstance(stringToFormat, str):
-            raise ValueError(
-                '# formatSeveral(): stringsToFormat should be a list of str.')
+            msg.append("stringsToFormat should be a list of str.")
+            raise ValueError(''.join(msg))
 
-    # Checking validity of kwargs
     if kwargs == {}:
-        raise ValueError(
-                '# formatSeveral(): excepted at least one **kwargs.')
+        msg.append("expected at least one **kwarg.")
+        raise ValueError(''.join(msg))
+    
     for value in kwargs.values():
         if not isinstance(value, str):
-            raise TypeError(
-                '# formatSeveral(): **kwargs values must be strings.')
+            msg.append("**kwargs can only be strings.")
+            raise TypeError(''.join(msg))
 
-    # ---------------- WORK ----------------------------------------------------
-    # -------- Preparation
-    # Building two lists: strings to skip, strings that can be formatted.
-    skippedStrings = []
-    formattableStrings = []
-    for stringToCheck in stringsToFormat:
-        # Skipping: empty str
-        if stringToCheck == '':
-            skippedStrings.append(stringToCheck)
-            continue
-        # Skipping: str that cannot be holding keys
-        if (not '{' in stringToCheck) or (not '}' in stringToCheck):
-            skippedStrings.append(stringToCheck)
-            continue
-        # Skipping: str with no valid key
-        regexMatches = re.findall(keyRegex, stringToCheck)
-        if regexMatches == []:
-            skippedStrings.append(stringToCheck)
+    # The script will try to format each string, then append the result
+    formatted = []
+    regex = re.compile('{[a-zA-Z0-9]+}')
+
+    for string in stringsList:
+        # Find all keys in a string
+        keys = re.findall(regex, string)
+
+        # String does not have any keys to format, append as is
+        if not keys:
+            formatted.append(string)
             continue
 
-        # Str holds keys. Can be formatted.
-        formattableStrings.append(stringToCheck)
+        # String has keys to format, rebuild it before appending
+        rebuilt = string
+        for key in keys:
+            # Remove curly braces from the key
+            rawKey = ''.join( [chr
+                                for chr in key
+                                if not chr in ['{', '}']])
+            if rawKey in kwargs.keys():
+                rebuilt = rebuilt.replace(key, kwargs[rawKey])
+        formatted.append(rebuilt)
 
-    # Building replaceDict: keys written as strings to replace, value.
-    '''The function will use str.replace() instead of str.format(), in order to
-    allow for strings holding undeclared keys.'''
-    replaceDict = {}
-    for key, value in kwargs.items():
-        strToReplace = '{' + key + '}'
-        replaceDict[strToReplace] = value
-    
-    # -------- Work
-    formattedStrings = []
-    incompleteStrings = []
-    for stringToFormat in formattableStrings:
-        newString = stringToFormat
-        for key, value in replaceDict.items():
-            newString = newString.replace(key, value)
-        
-        # Append newString to the correct list
-        if newString == stringToFormat:
-            incompleteStrings.append(newString)
-        else:
-            formattedStrings.append(newString)
-
-    # -------- Postwork verifications
-    # Checking if there are strings still holding keys
-    for formattedString in formattedStrings:
-        # Holding empty key?
-        if '{}' in formattedString:
-            incompleteStrings.append(formattedString)
-            continue
-        # Holding named key?
-        regexMatches = re.findall(keyRegex, formattedString)
-        if not regexMatches == []:
-            incompleteStrings.append(formattedString)
-
-    return formattedStrings, incompleteStrings, skippedStrings
+    return formatted
 
 
 def get_padded_increment(numberToIncrement, padding):
