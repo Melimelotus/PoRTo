@@ -180,7 +180,7 @@ def flatten_components_list(listToFlatten):
         - {startIndex}
         - {endIndex}
     '''
-    regex = re.compile('^([a-zA-Z|_1-9]+\.[a-z]+)\[([1-9]+)[:]([1-9]+)\]$')
+    regex = re.compile('^([a-zA-Z|_0-9]+\.[a-z]+)\[([0-9]+)[:]([0-9]+)\]$')
     
     # Check each element and flatten if necessary
     for element in listToFlatten:
@@ -237,37 +237,22 @@ def get_average_position(objList):
     
     # Flatten list ( ['obj.vtx[0:5]'] >>>> ['obj.vtx[0]', 'obj.vtx[1]', ...] )
     flattenedList = flatten_components_list(objList)
+    amount = len(flattenedList)
 
     # Dictionary holding all values for each channel
     channels = ['tx', 'ty', 'tz']
-    translates = {channel: [] for channel in channels}
+    translatesDic = {channel: [] for channel in channels}
 
+    # Add the translate values of each object to the dictionary
     for obj in flattenedList:
         values = cmds.xform(obj, query=True, translation=True, worldSpace=True)
         for channel, value in zip(channels, values):
-            translates[channel].append(value)
-    # TODO: test, is that allowed?
-
-    # OLD
-    '''txValues = []
-    tyValues = []
-    tzValues = []
-    for obj in flattenedList:
-        values = cmds.xform(obj,
-                            query=True,
-                            translation=True,
-                            worldSpace=True)
-        # Unpack
-        txValues.append(values[0])
-        tyValues.append(values[1])
-        tzValues.append(values[2])
-
-    # Calculate means
-    amount = len(flattenedList)
-    means = []
-    for values in [txValues, tyValues, tzValues]:
-        means.append( sum(values) / amount )
-    return means'''
+            translatesDic[channel].append(value)
+    
+    # Calculate means: sum of all values for a given channel, divided by amount
+    means = [(sum(translatesDic[channel]) / amount)
+             for channel in channels]
+    return means
 
 
 def get_center_position(objList):
@@ -280,7 +265,7 @@ def get_center_position(objList):
         return [0.0,0.0,0.0]
     
     # Dictionary holding min and max values for each channel
-    bounds = {}
+    boundsDic = {}
     channels = ['tx', 'ty', 'tz']
     flattenedList = flatten_components_list(objList)
 
@@ -291,7 +276,7 @@ def get_center_position(objList):
                         worldSpace=True)
 
     for value, channel in zip(values, channels):
-        bounds[channel] = [value, value]
+        boundsDic[channel] = [value, value]
 
     flattenedList.pop(0)
 
@@ -303,15 +288,15 @@ def get_center_position(objList):
                             worldSpace=True)
         # Do these values beat the current bounds?
         for value, channel in zip(values, channels):
-            if value < bounds[channel][0]:
+            if value < boundsDic[channel][0]:
                 # New min!
-                bounds[channel][0] = value
-            if value > bounds[channel][1]:
+                boundsDic[channel][0] = value
+            if value > boundsDic[channel][1]:
                 # New max!
-                bounds[channel][1] = value
+                boundsDic[channel][1] = value
 
     # center coords = (channelmin + channelmax) / 2
-    centerCoords = [(bounds[channel][0] + bounds[channel][1])/2
+    centerCoords = [(boundsDic[channel][0] + boundsDic[channel][1])/2
                     for channel in channels]
     return centerCoords
 
