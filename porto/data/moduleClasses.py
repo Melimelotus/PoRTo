@@ -117,7 +117,7 @@ class PortoModule(object):
                 )
             raise ValueError(''.join(msg))
 
-        if not isinstance(side, str):
+        if not isinstance(side, (str, unicode)):
             msg.append("'name' attr must be a string.")
             raise TypeError(''.join(msg))
         elif not utils.respects_regex_pattern(name, nomenclature.allowedCharsRegex):
@@ -128,7 +128,7 @@ class PortoModule(object):
             msg.append("'parentModule' attr must be None or a PortoModule.")
             raise TypeError(''.join(msg))
         
-        if not parentingOutput == None and not isinstance(parentingOutput, str):
+        if not parentingOutput == None and not isinstance(parentingOutput, (str, unicode)):
             msg.append("'parentingOutput' attr must be None or a string.")
             raise TypeError(''.join(msg))
         
@@ -154,7 +154,7 @@ class PortoModule(object):
         Create the placement group.
         """
         self.create_root_group()
-        self.parent_module()
+        self.parent_module() #TODO ISNT THAT A PUBLISH METHOD?????
         self.create_placement_group()
         return
     
@@ -209,14 +209,15 @@ class PortoModule(object):
     
     def parent_module(self):
         """Parent the module to its specified parent"""
-        messages = ["# PortoModule class, parent_module() method - "]
-
-        # Parent to main rig group if no parentModule has been specified
+        # No parent specified: clean and parent to main rig group
         if self.parentModule==None:
             self.parent_module_to_main_rigging_group()
             return
+        
+        self.parent_module_to_main_rigging_group()
 
         # Check existence of parentModule. Warn and skip if it does not exist.
+        messages = ["# PortoModule class, parent_module() method - "]
         if not self.parentModule.exists():
             messages.append("parent does not exist yet. Skipped parenting.")
             cmds.warning(''.join(messages))
@@ -239,7 +240,7 @@ class PortoModule(object):
             '''Connect to offset parentMatrix attribute'''
             pass
             return
-        
+
         # Check existence of the node specified in parentOutput.
         # Warn and skip if it does not exist.
         parentOutputExists = False #TODO
@@ -247,6 +248,9 @@ class PortoModule(object):
         if not parentOutputExists:
             messages.append("parent does not exist yet. Skipped parenting.")
             cmds.warning(''.join(messages))
+             # Follow root group.
+            '''Connect to offset parentMatrix attribute'''
+            # TODO
             return
 
         # Parent

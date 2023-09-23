@@ -138,9 +138,9 @@ def format_several(stringsList, **kwargs):
         rebuilt = string
         for key in keys:
             # Remove curly braces from the key
-            rawKey = ''.join( [chr
-                                for chr in key
-                                if not chr in ['{', '}']])
+            rawKey = ''.join([chr
+                              for chr in key
+                              if not chr in ['{', '}']])
             if rawKey in kwargs.keys():
                 rebuilt = rebuilt.replace(key, kwargs[rawKey])
         formatted.append(rebuilt)
