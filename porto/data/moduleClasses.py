@@ -12,6 +12,7 @@ from maya import cmds
 from data import nomenclature
 from data import portoPreferences
 import mayaUtils
+import naming
 import portoScene
 import utils
 

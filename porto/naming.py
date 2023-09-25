@@ -51,8 +51,10 @@ def create_group_name_from_string(basename, string):
     """Combine the given basename and string to build a group name.
 
     Gives the best results when the name respects PoRTo's nomenclature.
-        >>>> 'Position' + 'l_feather01_ctl'
-        l_feather01Position_grp
+        >>>> 'placement' + 'l_feather01_grp'
+        l_feather01_placement_grp
+        >>>> 'position' + l_index_01_ctl'
+        l_index_01Position_grp
 
         Args:
             - basename: str.
@@ -61,32 +63,40 @@ def create_group_name_from_string(basename, string):
                 String to build from. If a suffix is found, it will be removed
                 and changed into 'grp'.
     """
-    groupName = ''
+    # Prepare capitalized and un-capitalized versions of basename
+    if len(basename) > 1:
+        uncapitalized = basename[0].lower() + basename[1:]
+        capitalized = basename[0].upper() + basename[1:]
+    else:
+        uncapitalized = basename.lower()
+        capitalized = basename.upper()
+
+    # Create group name
     if respects_nomenclature_format(string):
         # Respects PoRTo's nomenclature. Sure to rebuild nicely :)
         decomposeDic = decompose_porto_name(string)
 
-        # Insert basename after objectName or freespace. Changes suffix.
-        if decomposeDic['freespace'] == None:
-            groupName = '{side}_{objectName}{basename}_grp'.format(
+        # Insert basename after {name} or {detail}. Change suffix.
+        if not decomposeDic['detail']:
+            groupName = '{side}_{name}_{uncapitalized}_grp'.format(
                 side=decomposeDic['side'],
-                objectName=decomposeDic['objectName'],
-                basename=basename)
+                name=decomposeDic['name'],
+                uncapitalized=uncapitalized)
         else:
-            groupName = '{side}_{objectName}_{freespace}{basename}_grp'.format(
+            groupName = '{side}_{name}_{detail}{capitalized}_grp'.format(
                 side=decomposeDic['side'],
-                objectName=decomposeDic['objectName'],
-                freespace=decomposeDic['freespace'],
-                basename=basename)
+                name=decomposeDic['name'],
+                detail=decomposeDic['detail'],
+                capitalized=capitalized)
     elif has_suffix(string):
         # Does not respect PoRTo's nomenclature but has a suffix. Remove it!
-        groupName = '{noSuffix}{basename}_grp'.format(
+        groupName = '{noSuffix}_{uncapitalized}_grp'.format(
             noSuffix=remove_suffix(string),
-            basename=basename)
+            uncapitalized=uncapitalized)
     else:
-        groupName = '{string}{basename}_grp'.format(
+        groupName = '{string}_{uncapitalized}_grp'.format(
             string=string,
-            basename=basename)
+            uncapitalized=uncapitalized)
     return groupName
 
 
@@ -110,7 +120,7 @@ def decompose_attribute_fullpath(fullpathString):
 
 def decompose_porto_name(string):
     """Decompose the given name into a dictionary holding four keys: side, name,
-    freespace (optional), suffix.
+    detail (optional), suffix.
     
     Follows the nomenclature defined by PoRTo.
     """
@@ -120,12 +130,12 @@ def decompose_porto_name(string):
         # String does not follow the nomenclature defined by PoRTo.
         decomposeDic = {'side': None,
                         'name': None,
-                        'freespace': None,
+                        'detail': None,
                         'suffix': None}
     else:
         decomposeDic = {'side': match.group(1),
                         'name': match.group(2),
-                        'freespace': match.group(3),
+                        'detail': match.group(3),
                         'suffix': match.group(4)}
 
     return decomposeDic
@@ -218,11 +228,6 @@ def respects_camelcase(string):
 def respects_nomenclature_format(string):
     """Predicate. Check if the given string respects the format defined in
     PoRTo's nomenclature.
-
-    Expected format: {side}_{name}_{freespace}_{suffix}
-    Side can only be 'l', 'r', 'c', 'u'.
-    Freespace is optional.
-    Suffix can only be three letters long.
     """
     return utils.respects_regex_pattern(string, nomenclature.formatRegex)
 

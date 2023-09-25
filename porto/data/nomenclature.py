@@ -31,15 +31,23 @@ sides={'l': 'left',
         --> underscores can only be followed by lowercase letters.
 
     - formatRegex: checks if the string fits the nomenclature format.
-        format: {side}_{name}_{freespace}_{suffix}
+        format: {side}_{name}_{detail}_{suffix}
         --> {side} can only be one of these: ['l', 'r', 'c', 'u'].
         --> {name} can hold lowercase letters, uppercase letters, numbers.
-        --> {freespace} is optional. It can hold lowercase letters, uppercase
-        letters, numbers.
+        --> {detail} is optional. It can hold lowercase letters, uppercase
+        letters, numbers. It is used for identifying special groups (placement,
+        position, parentspace...) or chain indexes.
         --> {suffix} must be three letters long. It can only hold lowercase
         letters.
         Returns four capturing groups for each part of the nomenclature.
         Underscores are not captured.
+        --> A module's name can be retrieved with {side} and {name} ONLY. Any
+        information that might prevent a script from finding a module should be
+        added to {detail}.
+        e.g "l_featherPlacement_grp" refers to a module that is on the left side
+        of the asset, and that is named "featherPlacement".
+        "l_featherPlacement_placement_grp" refers to the placement group of
+        featherPlacement.
 
     - fullPathToAttributeRegex: checks if the string is the full path to an attr
     in Maya. It can hold the detailed hierarchy until the name of the object
@@ -63,7 +71,7 @@ sides={'l': 'left',
 """
 
 allowedCharsRegex = "^[a-zA-Z0-9]+$"
-camelCaseRegex="^[a-z](?:[a-z]|[0-9](?![a-z])|[A-Z](?![A-Z])|[_](?=[a-z])){0,}$"
+camelCaseRegex="^[a-z0-9](?:[a-z]|[0-9](?![a-z])|[A-Z](?![A-Z])|[_](?=[a-z0-9])){0,}$"
 formatRegex="(^[lrcu])(?:_)([a-zA-Z0-9]+)(?:[_](?![_]))([a-zA-Z0-9]+(?=[_]))?(?:[_])?([a-z]{3}$)"
 fullpathToAttributeRegex="^([a-zA-Z0-9_|]+[|])?([a-zA-Z0-9_]+)[.]([a-zA-Z0-9_\[\].]+)$"
 suffixRegex="([a-zA-Z0-9_]+)(?:_)([a-z]{3}$)"
