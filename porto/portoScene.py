@@ -159,7 +159,6 @@ def increment_save():
     # Increment version and update dic
     previousVersion = get_file_version(filename)
     previousVersionFullStr = decomposed['version']
-    print(previousVersionFullStr)
 
     newVersion = int(previousVersion) + 1
     newVersion = str(newVersion).zfill(portoPreferences.fileVersionPadding)

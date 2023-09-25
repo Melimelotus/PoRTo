@@ -1,6 +1,6 @@
 """Collection of functions useful for coding.
     If a function is meant to be used in Maya, it does NOT belong here.
-    If a function needs another module from porto, it does NOT belong here.
+    If a function needs another module from PoRTo, it does NOT belong here.
 """
 
 import re

@@ -265,6 +265,7 @@ def quickplace(masters, followers, channels=['translate', 'rotate', 'scale']):
             raise TypeError("# quickplace - arguments should be str or lists of str.")
         
     # Adjust arguments: they must be lists.
+    # TODO move to utils module
     def makelist(arg):
         return [arg] if not isinstance(arg, list) else arg
     

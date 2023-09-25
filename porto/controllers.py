@@ -41,22 +41,18 @@ def create_shaped_curve(name, shape, linear=True):
             - linear: bool, default = True.
                 Changes the degree of the curve. It can be either linear or
                 cubic.
-                
     """
     shapeCoords = curveShapes.curve_coords_dic()[shape]
     cmds.curve(degree = 1, n = name, p = shapeCoords)
-
     return
 
 
 def decompose_joint_name_and_label(jointName):
     """Decompose the given name following PoRTo's nomenclature, and label the
     joint accordingly."""
-
     decomposition = naming.decompose_porto_name(jointName)
     label_joint_side(jointName, decomposition['side'])
     label_joint_type(jointName, decomposition['name'])
-    
     return
 
 
@@ -80,7 +76,6 @@ def label_joint_side(jointName, sideLetter):
                   'r': 2,
                   'u': 3}
     cmds.setAttr(jointName+'.side', sideLabels[sideLetter])
-
     return
 
 
@@ -95,10 +90,8 @@ def label_joint_type(jointName, typeStr):
     """
     # Set the type to 'Other'. This allows the user to set a custom value.
     cmds.setAttr(jointName+'.type', 18)
-
     # Set custom value.
     cmds.setAttr(jointName+'.otherType', typeStr, type='string')
-
     return
 
 #

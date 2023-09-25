@@ -4,8 +4,10 @@ displayed in shelves, with a dedicated tooltip and icon.
 
 from maya import cmds
 
+from data import moduleClasses
 import constraints
 import mayaUtils
+import naming
 import portoModules
 
 
@@ -46,33 +48,75 @@ class create_empty_module():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
+        # TODO: refactor, move that to portoModules
+        def create_empty(moduleData):
+            empty=moduleClasses.EmptyModule(name=moduleData['name'],
+                                            side=moduleData['side'],
+                                            parentModule=moduleData['parentModule'])
+            if not empty.exists():
+                empty.build_module()
+            elif not mayaUtils.node_exists(empty.get_placement_group_name(), 'transform'):
+                empty.create_placement_group()
+            return empty
+        
+        # Get selection and study it
+        # TODO: refactor, function "get_selected_placement_locs"
         selection = cmds.ls(sl=True, dagObjects = True, transforms=True)
         locs = []
         if selection:
-            for selected in selection:
-                if not portoModules.is_placement_loc(selected):
-                    continue
-                locs.append(selected)
+            locs = [selected for selected in selection
+                    if portoModules.is_placement_loc(selected)]
 
         if not locs:
+            # Nothing usable selected. Prompt user for module data.
+            moduleData = {'side': 'u',
+                          'name': 'default',
+                          'parentModule': None}
             # TODO
+            cmds.warning('create Empty module, no selection: TODO')
             # prompt for data, create empty module
+            create_empty(moduleData)
             return
         else:
-            # Create modules
-            # {loc: placement grp}, used for reparenting locators after module creation
+            # Placement locators selected. Build module from them.
             locReparenting = {}
             for loc in locs:
-                decompose = portoModules.decompose_placement(loc)
-                empty = portoModules.moduleClasses.EmptyModule(name=decompose['name'],
-                                                side=decompose['side'],
-                                                parentModule=decompose['parent'])
-                if not empty.exists():
-                    empty.build_module()
-                elif not mayaUtils.node_exists(empty.get_placement_group_name(), 'transform'):
-                    empty.create_placement_group()
+                # Decompose name
+                decompose = naming.decompose_porto_name(loc)
+                moduleData = {'side': decompose['side'],
+                              'name': decompose['name'],
+                              'parentModule': None}
+                
+                # Study locator's parent
+                parent = cmds.listRelatives(loc, parent=True)
+                if not parent:
+                    # No parent: nothing more to do
+                    moduleData['parentModule'] = None
+                    empty = create_empty(moduleData)
+                    locReparenting[loc] = empty.get_placement_group_name()
+                    continue
+                elif portoModules.is_placement_loc(parent[0]):
+                    # Does the parent belong to the same chain?
+                    decomposedParent = naming.decompose_porto_name(parent[0])
+                    sameName = decomposedParent['name'] == decompose['name']
+                    sameSide = decomposedParent['side'] == decompose['side']
+
+                    if sameName and sameSide:
+                        # Parent belongs to the same chain as the current loc
+                        moduleData['parentModule'] = None
+                        locReparenting[loc] = parent[0]
+                        create_empty(moduleData)
+                        continue
+                    else:
+                        moduleData['parentModule']=moduleClasses.PortoModule(
+                                                   name=decomposedParent['name'],
+                                                   side=decomposedParent['side'])
+                        empty = create_empty(moduleData)
+                        locReparenting[loc] = empty.get_placement_group_name()
+                        continue
+                empty = create_empty(moduleData)
                 locReparenting[loc] = empty.get_placement_group_name()
-            
+                # Loop end
             # Reparent placement locators
             for loc, parent in locReparenting.items():
                 mayaUtils.parent(loc, parent)

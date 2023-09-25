@@ -12,7 +12,6 @@ from maya import cmds
 from data import nomenclature
 from data import portoPreferences
 import mayaUtils
-import naming
 import portoScene
 import utils
 
@@ -155,7 +154,7 @@ class PortoModule(object):
         Create the placement group.
         """
         self.create_root_group()
-        self.parent_module() #TODO ISNT THAT A PUBLISH METHOD?????
+        self.parent_module()
         self.create_placement_group()
         return
     
@@ -239,6 +238,7 @@ class PortoModule(object):
         if parentOutput == None:
             # Follow root group.
             '''Connect to offset parentMatrix attribute'''
+            # TODO
             pass
             return
 
@@ -330,6 +330,7 @@ class EmptyModule(PortoModule):
     pass
     #
 
+
 class ChainModule(PortoModule): # TODO
     """Define a PoRTo rigging module: basic chain of controllers.
 
@@ -347,6 +348,7 @@ class ChainModule(PortoModule): # TODO
         return
     
     #
+
 
 class TendonModule(PortoModule): # TODO
     """Define a PoRTo rigging module: tendon.
