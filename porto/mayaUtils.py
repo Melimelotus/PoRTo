@@ -152,8 +152,12 @@ def create_node(nodeName, nodeType):
         msg="# create_node() - conflict in scene. A node with the same name but a different type exists already."
         raise TypeError(msg)
 
-    cmds.createNode(nodeType, name = nodeName)
-
+    if nodeType in ['locator', 'spaceLocator']:
+        # Locator need to be created via their dedicated function
+        # Otherwise, the shape will receive the name but NOT the transform
+        cmds.spaceLocator(name = nodeName)
+    else:
+        cmds.createNode(nodeType, name = nodeName)
     return True
 
 

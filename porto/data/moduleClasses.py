@@ -120,7 +120,7 @@ class PortoModule(object):
         if not isinstance(side, (str, unicode)):
             msg.append("'name' attr must be a string.")
             raise TypeError(''.join(msg))
-        elif not utils.respects_regex_pattern(name, nomenclature.allowedCharsRegex):
+        elif not utils.respects_regex_pattern(name, nomenclature.charsAndNumbersRegex):
             msg.append("'name' attr has invalid characters.")
             raise ValueError(''.join(msg))
         

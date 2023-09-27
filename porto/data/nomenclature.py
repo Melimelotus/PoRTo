@@ -22,7 +22,7 @@ sides={'l': 'left',
 """Several regex to look for different patterns.
 
     - allowedCharsRegex: checks if the string has any character that is not a
-    non-accentued letter and not a number.
+    non-accentued letter, nor a number, nor an underscore.
 
     - camelCaseRegex: checks if the string respects camelCase.
         --> it can only start with a lowercase letter.
@@ -30,6 +30,9 @@ sides={'l': 'left',
         --> an uppercase letter cannot be followed by another uppercase letter.
         --> underscores can only be followed by lowercase letters.
 
+    - charsAndNumbersRegex: checks if the string has any character that is not a
+    non-accentued letter, nor a number.
+    
     - formatRegex: checks if the string fits the nomenclature format.
         format: {side}_{name}_{detail}_{suffix}
         --> {side} can only be one of these: ['l', 'r', 'c', 'u'].
@@ -70,8 +73,9 @@ sides={'l': 'left',
         The underscore that precedes the suffix is not captured.
 """
 
-allowedCharsRegex = "^[a-zA-Z0-9]+$"
+allowedCharsRegex = "^[a-zA-Z0-9_]+$"
 camelCaseRegex="^[a-z0-9](?:[a-z]|[0-9](?![a-z])|[A-Z](?![A-Z])|[_](?=[a-z0-9])){0,}$"
+charsAndNumbersRegex = "^[a-zA-Z0-9]+$"
 formatRegex="(^[lrcu])(?:_)([a-zA-Z0-9]+)(?:[_](?![_]))([a-zA-Z0-9]+(?=[_]))?(?:[_])?([a-z]{3}$)"
 fullpathToAttributeRegex="^([a-zA-Z0-9_|]+[|])?([a-zA-Z0-9_]+)[.]([a-zA-Z0-9_\[\].]+)$"
 suffixRegex="([a-zA-Z0-9_]+)(?:_)([a-z]{3}$)"

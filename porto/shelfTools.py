@@ -1,5 +1,7 @@
 """Collection of tools for direct use by the rigger. These tools are meant to be
 displayed in shelves, with a dedicated tooltip and icon.
+
+None of these functions are meant to be imported anywhere else.
 """
 
 from maya import cmds
@@ -9,6 +11,7 @@ import constraints
 import mayaUtils
 import naming
 import portoModules
+import portoScene
 
 
 '''
@@ -172,16 +175,30 @@ class create_loc_from_selection(object):
         # Prompt user for a name
         promptMsg = ['Enter a name for the locator.\n',
                     'An empty string will result in a default name.']
-        name = mayaUtils.prompt_for_text(title='Name',
-                                        message=''.join(promptMsg))
+        name=mayaUtils.prompt_for_text(title='Name', message=''.join(promptMsg))
+
         if name == None:
+            # User dismissed the text prompt. Cancel operation.
             return
         
-        # Create and place
-        trueName = cmds.spaceLocator(name=name)[0]
-        cmds.xform(trueName, translation =  mayaUtils.get_center_position(sel))
+        name=naming.replace_illegal_characters(name)
+        print(name)
+        if naming.has_illegal_characters(name):
+            # String still holds illegal characters. Warn user and empty string.
+            messages.append("name holds illegal characters. Switching to default name.")
+            cmds.warning("".join(messages))
+            name = ''
 
-        return trueName
+        # Create and place
+        if not name:
+            print('no name')
+            # Let maya handle the naming
+            name = cmds.spaceLocator()[0]
+        else:
+            # Use the name inputted by the user
+            mayaUtils.create_node(name, 'locator')
+        cmds.xform(name, translation =  mayaUtils.get_center_position(sel))
+        return name
     #
 
 
@@ -248,6 +265,25 @@ class create_hierarchy_from_selection_order(object):
             cmds.parent(selectedObject, parentTo)
             parentTo = selectedObject
         return
+    #
+
+
+class increment_save(object):
+    """Increment save the current scene."""
+    def __init__(self):
+        pass
+
+    def icon(self):
+        return 'incrementSave'
+    
+    def tooltip(self):
+        tooltip=["Increment save\n",
+                 "Save the current scene into a new, incremented, file.\n",]
+        return ''.join(tooltip)
+
+    @mayaUtils.undo_chunk()
+    def __call__(self):
+        portoScene.increment_save()
     #
 
 

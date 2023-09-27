@@ -24,32 +24,9 @@ def build_filename(elementsDic):
         Args:
             - elementsDic: dict.
                 Dictionary of elements to put in the filename.
-                {asset:'parabones', step:'rig', version:'001', extension:'ma'}
+                {asset:'parabones', step:'rig', version:'v001', extension:'ma'}
     """
-    return get_filename_format().format(**elementsDic)
-
-
-def build_filename_regex():
-    """Return the regular expression that define how a Maya scene file shoud be
-    named."""
-    filenameFormat = get_filename_format()
-    # In regex, '.' acts as a wildcard. Replace with '[.]'
-    filenameFormat = filenameFormat.replace('.', '[.]')
-
-    formatted = filenameFormat.format(
-        asset = portoPreferences.filename_assetRegex,
-        step = portoPreferences.filename_stepRegex,
-        version = build_file_version_regex(),
-        extension = '([a-z]+)'
-        )
-    
-    return "^{formatted}$".format(formatted=formatted)
-
-
-def build_file_version_regex():
-    """Return the regex that define how the version of a file should be written."""
-    versionRegexFormat = portoPreferences.filename_versionRegexFormat
-    return versionRegexFormat.replace('versionPadding', str(portoPreferences.fileVersionPadding))
+    return portoPreferences.build_filename_format().format(**elementsDic)
 
 
 def create_asset_group():
@@ -80,101 +57,146 @@ def create_rig_modules_group():
 
 
 def decompose_porto_filename(filename):
-    """Decompose the filename into a dictionary holding each expected element."""
-    # Get matches
-    match = re.search(build_filename_regex(), filename)
+    """Decompose the filename into a dictionary holding several name elements,
+    as defined by PoRTo's nomenclature.
+    e.g >>>> {asset:'parabones', step:'rig', version:'v001', extension:'ma'}
 
-    if match==None:
-        raise Exception("# decompose_filename(): the given filename does not respect PoRTo's defined nomenclature.")
+    If the filename cannot be fully decomposed (if the filename does not respect
+    PoRTo's file nomenclature), the function will try to look for a version and
+    an extension.
+    Return None if the filename is an empty string.
     
-    # Build dictionary
-    decomposeDic={}
-    # Create a key for each element of the nomenclature
-    index=1
-    for filenameElement in portoPreferences.filenameElements:
-        # Index starts at 1: match.group(0) is the full string.
-        decomposeDic[filenameElement] = str(match.group(index))
-        index += 1
-    # Create the extension key
-    decomposeDic['extension'] = str(match.group(index))
+        Args:
+            - filename: str.
+    """
+    allElements = [elt for elt in portoPreferences.nameElements]
+    allElements.append('extension')
+
+    if not filename:
+        # Scene has not been saved yet. Nothing to do
+        return None
+    
+    # Get matches
+    matches = re.search(portoPreferences.build_filename_regex(), filename)
+    if not matches:
+        # The given filename does not respect PoRTo's defined nomenclature
+        decomposeDic = {element:None for element in allElements}
+
+        # Look for a version
+        decomposeDic['version'] = get_file_version_dic(filename)['fullStr']
+        # Look for an extension
+        decomposeDic['extension'] = get_file_extension(filename)
+        return decomposeDic
+    
+    # Decompose the filename into a dictionary
+    decomposeDic = {allElements[i]:matches.group(i + 1)
+                    for i in range(0, len(allElements))}
     return decomposeDic
 
 
 def get_asset_name(filename):
     """Get the name of the asset from the filename. Filename must respect
     PoRTo's preferences."""
+    decompose_porto_filename(filename)['asset']
     return decompose_porto_filename(filename)['asset']
 
 
 def get_current_asset_name():
-    """Get the name of the current asset."""
-    return get_asset_name(mayaUtils.get_current_filename())
+    """Get the name of the current asset. Return a default asset name if none
+    was found."""
+    currentAssetName = get_asset_name(mayaUtils.get_current_filename())
+    if not currentAssetName:
+        # Could not get asset name, return a default name.
+        return portoPreferences.defaultAssetName
+    return currentAssetName
 
 
 def get_file_extension(filename):
     """Get the extension from the filename."""
-    return decompose_porto_filename(filename)['extension'].replace('.', '')
+    matches = re.search(portoPreferences.get_extension_regex(), filename)
+    if not matches:
+        # File has not been saved or versioned yet.
+        return None
+    return matches.group(1)
 
 
-def get_file_version(filename):
-    """Get the version number from the filename. Return a str holding the padded
-    version number."""
-    fullVersionStr = decompose_porto_filename(filename)['version']
-
-    # VersionStr can be 'v001', '01', 'version001'...
-    padding = portoPreferences.fileVersionPadding
-    return fullVersionStr[-padding:]
-
-
-def get_filename_format():
-    """Build the expected format for all filenames.
+def get_file_version_dic(filename):
+    """Get the version number from the filename.
     
-    The result may change according to what's been specified in PoRTo's
-    preferences.
-    Return a string ready to be formatted.
-    ---> '{asset}_{step}_{version}.{extension}'
+    Return {fullStr: str, padded: str, num: int}.
     """
-    # Add curly braces around each element
-    formattableElements = ['{{{elt}}}'.format(elt=elt)
-                           for elt in portoPreferences.filenameElements]
+    matches = re.search(portoPreferences.get_version_regex(), filename)
+    if not matches:
+        # File has not been saved or versioned yet.
+        result = {'fullStr': None,
+                  'padded': None,
+                  'num': None}
+        return result
     
-    # Join and add extension
-    filename_format = '{joinedFormattableElements}.{{extension}}'.format(
-        joinedFormattableElements = '_'.join(formattableElements))
+    # Full version str: 'version001', 'v001'...
+    fullStr = matches.group(1)
+    
+    # Strip and keep only the padded numbers: '001'
+    padding = portoPreferences.versionPadding
+    paddedStr = fullStr[-padding:]
 
-    return filename_format
+    # Build result dic
+    result = {'fullStr': fullStr,
+              'padded': paddedStr,
+              'num': int(paddedStr)}
+    return result
 
 
 def increment_save():
     """Save the current file into a new, incremented version ."""
+    messages = ["# increment_save() - "]
+
     filename = mayaUtils.get_current_filename()
-    file = mayaUtils.get_current_file()
 
-    # Decompose current filename into a dictionary of elements
-    '''decomposed will look something like this:
-        {asset:'parabones', step:'rig', version:'v001', extension:'ma'}
-    '''
-    decomposed = decompose_porto_filename(filename)
+    # Check
+    if not filename:
+        messages.append("file has not been saved yet. Cannot increment.")
+        raise Exception(''.join(messages))
 
-    # Increment version and update dic
-    previousVersion = get_file_version(filename)
-    previousVersionFullStr = decomposed['version']
+    # Build incrementedFilename and get extension
+    incrementedFilename = ''
+    extension = ''
+    if not is_versioned(filename):
+        # File has not been versioned yet: create first version
+        splitted = filename.rsplit('.', 1)
 
-    newVersion = int(previousVersion) + 1
-    newVersion = str(newVersion).zfill(portoPreferences.fileVersionPadding)
+        extension = splitted[1]
+        incrementedFilename='{name}_v001.{extension}'.format(name = splitted[0],
+                                                             extension = splitted[1])
+    else:
+        # Get current version
+        currentVersionDic = get_file_version_dic(filename)
+        currentVersion = currentVersionDic['fullStr'] # 'version001'
 
-    decomposed['version'] = previousVersionFullStr.replace(previousVersion, newVersion)
+        # Increment
+        currentPadded = currentVersionDic['padded'] # '001'
+        incrementPadded = str(currentVersionDic['num'] + 1).zfill(portoPreferences.versionPadding) # '002'
+        
+        incrementedVersion = currentVersion.replace(currentPadded, incrementPadded) # 'v001' >>>> 'v002'
 
-    # Build new filename, prepare new file (path + filename)
-    incrementedFilename = build_filename(decomposed)
-    
-    incrementedFile = file.replace(filename, incrementedFilename)
+        # Build filename
+        extension = get_file_extension(filename)
+        incrementedFilename = filename.replace(currentVersion, incrementedVersion)
+
+    # Build incremented: name and full path to the file
+    incremented = mayaUtils.get_current_file().replace(filename, incrementedFilename)
 
     # Save
-    extension = get_file_extension(filename)
-
-    cmds.file(rename=incrementedFile)
+    cmds.file(rename=incremented)
     cmds.file(save=True, type=extensions.extensionsDic[extension])
-
     return
+
+
+def is_versioned(string):
+    """Predicate. Return True if the given string holds a version ('v001', 
+    'version001', ... in the string)."""
+    matches = re.findall(portoPreferences.get_version_regex(), string)
+    return True if matches else False
+
+
 #

@@ -158,6 +158,11 @@ def get_suffix(string):
     return None if match == None else match.group(2)
 
 
+def has_illegal_characters(string):
+    """Predicate. Check if the given string holds illegal characters."""
+    return not utils.respects_regex_pattern(string, nomenclature.allowedCharsRegex)
+
+
 def has_suffix(string):
     """Predicate. Check if the given string has a three-lettered suffix."""
     return utils.respects_regex_pattern(string, nomenclature.suffixRegex)
@@ -256,6 +261,14 @@ def respects_porto_nomenclature(string):
         return True
 
 
+def replace_illegal_characters(string):
+    illegal = [' ', '-', '.', ';', ':', ',', '?', '!']
+    rebuiltChars = [chr if not chr in illegal
+                    else '_'
+                    for chr in string]
+    return ''.join(rebuiltChars)
+
+
 def suffix_matches_type(nodeName, nodeType):
     """Predicate. Check if the suffix inside a given node name is coherent with
     the type of the node.
@@ -276,7 +289,6 @@ def suffix_matches_type(nodeName, nodeType):
         return True
     
     expectedType = from_suffix_get_expectation(suffix)
-    
     return expectedType == nodeType
 
 
@@ -289,19 +301,21 @@ def unabbreviate_transformation_channel(string):
     """Return the full channel name from an abbreviation.
     
     Only works with transformation channels (translate, rotate, scale)
-            tx ---> translateX
-            t ---> translate
+            tx >>>> translateX
+            t >>>> translate
     """
-    correspondanceDic = {'t': 'translate',
-                         'r': 'rotate',
-                         's': 'scale'}
-
+    channelsDic = {'t': 'translate',
+                   'r': 'rotate',
+                   's': 'scale'}
+    
     if string[-1].lower() in ['x', 'y', 'z']:
+        # Axis-specific channel
         fullName = '{channel}{axis}'.format(
-            channel = correspondanceDic[string[0]],
+            channel = channelsDic[string[0]],
             axis = string[-1].upper())
     else:
-        fullName = correspondanceDic[string[0]]
+        # General channel
+        fullName = channelsDic[string[0]]
     
     return fullName
 
