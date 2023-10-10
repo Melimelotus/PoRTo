@@ -1,11 +1,73 @@
 """Collection of functions that handle names, check nomenclature, operate on
-strings...
-"""
+strings..."""
 
 import re
 
 from data import nomenclature
 import utils
+
+
+
+class PortoName(object):
+    """Class to define and build a PoRTo name that follows the nomenclature.
+    
+    Nomenclature format defined by PoRTo: '{side}_{name}_{detail}_{suffix}'
+    - {side} can only be 'l', 'r', 'c', 'u' (left, right, center, unsided);
+    - {name} contains the name of the module;
+    - {detail} is optional;
+    - {suffix} can only be three letters long.
+
+        Attrs:
+            - side: str.
+                Side of the object being named. Allowed values:
+                {left: 'l', right: 'r', center: 'c', unsided: 'u'}
+            - name: str.
+                Name of the object. This name will be reused in all node systems
+                related to the object.
+            - detail: str.
+                Optional.
+            - suffix: str.
+                The suffix defines the node type or purpose of the object.
+                It must be exactly three letters long.
+                PoRTo defines specific suffixes for common nodes or purposes.
+    """
+
+    def __init__(self, side, name, suffix, detail=''):
+        """Check validity of name being built and initialize."""
+        # Checks
+        for attr in [side, name, suffix, detail]:
+            if not isinstance(attr, str):
+                raise TypeError("# Unable to build PortoName: all attributes must be string type.")
+            if not utils.respects_regex_pattern(attr, nomenclature.charsAndNumbersRegex):
+                raise ValueError("# Unable to build PortoName: illegal character found in attribute '{attr}'".format(attr=attr))
+            
+        if not side in nomenclature.allowedSideValues:
+            raise ValueError("# Unable to build PortoName: side must be 'l', 'r', 'c', or 'u'.")
+        
+        if not len(suffix) == nomenclature.maxSuffixLength:
+            raise ValueError("# Unable to build PortoName: suffix must be exactly three letters long.")
+        
+        # Build
+        self.side=side
+        self.name=name
+        self.suffix=suffix
+        self.detail=detail
+    
+    def __repr__(self):
+        """Return the class data."""
+        msg = "PortoName(side='{}', name='{}', detail='{}', suffix='{}')".format(
+            self.side, self.name, self.detail, self.suffix)
+        return msg
+    
+    def build_name(self):
+        """Build and return the name of the object."""
+        name = ["{side}_{name}_".format(side=self.side, name=self.name)]
+        if not self.detail=='':
+            name.append("{detail}_".format(detail=self.detail))
+        name.append("{suffix}".format(suffix=self.suffix))
+
+        return ''.join(name)
+    #
 
 
 def all_type_suffixes():
@@ -23,7 +85,16 @@ def all_suffixes():
     return allSuffixes
 
 
-def combine_list_of_strings(strings):
+def capitalize_respectfully(string):
+    """Capitalize the first character of a string without changing the case of the
+    other characters."""
+    capitalized = [string[i].upper() if i == 0
+                   else string[i]
+                   for i in range(0, len(string))]
+    return ''.join(capitalized)
+
+
+def camel_case_and_combine(strings):
     """Combine a list of strings into a single string. Capitalize the first
     letter of all appended strings to create camelCase.
 
@@ -130,7 +201,7 @@ def decompose_porto_name(string):
         decomposeDic = {'side': None,
                         'name': None,
                         'detail': None,
-                        'suffix': None}
+                        'suffix': get_suffix(string)}
     else:
         decomposeDic = {'side': match.group(1),
                         'name': match.group(2),
@@ -237,7 +308,7 @@ def respects_nomenclature_format(string):
 
 
 def respects_porto_nomenclature(string):
-    """Predicate. Verbose. Check if the given string respects all the criteria
+    """Predicate. Check if the given string respects all the criteria
     defined in PoRTo's nomenclature.
 
     Criteria:
@@ -249,16 +320,11 @@ def respects_porto_nomenclature(string):
     # ComplianceDic holds the results of each nomenclature check
     complianceDic = nomenclature_compliance(string)
 
-    failMessage=["# respects_porto_nomenclature: \"{string}\" fails the following checks: ".format(string=string)]
-    failedChecks=[check for check, passesCheck in complianceDic.items()
+    failedChecks=[check
+                  for check, passesCheck in complianceDic.items()
                   if not passesCheck]
 
-    if not failedChecks == []:
-        failMessage.append(str(failedChecks))
-        print(''.join(failMessage))
-        return False
-    else:
-        return True
+    return False if failedChecks else True
 
 
 def replace_illegal_characters(string):

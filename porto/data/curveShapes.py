@@ -1,6 +1,6 @@
 """Point coordinates that can be used for creating specific controller shapes.
-    Each set of coordinates is held inside a dedicated function.
-    These coordinates are normalised and should not go beyond -1 or 1.
+
+These coordinates are normalised and should not go beyond -1 or 1.
 
     List of shapes:
         - arrow

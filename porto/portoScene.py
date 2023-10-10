@@ -1,4 +1,9 @@
-"""Collection of functions"""
+"""Collection of functions for handling scenes in the environment defined by
+PoRTo.
+
+These functions exist for handling scene files (increment save...) and scene
+contents (create asset group, mesh group...)
+"""
 
 import re
 

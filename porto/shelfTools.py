@@ -18,15 +18,9 @@ import portoScene
 class pattern(object):
     """Documentation"""
     def __init__(self):
-        pass
-
-    def icon(self):
-        return 'iconName'
-    
-    def tooltip(self):
-        tooltip=["Pretty name\n",
-                 "Description"]
-        return ''.join(tooltip)
+        self.icon=''
+        self.tooltip=["Name\n",
+            "Useful information"]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -35,36 +29,52 @@ class pattern(object):
 '''
 
 
-class create_empty_module():
-    """Create an EmptyModule from the selected placement locators."""
+class connect_offset_parent_matrix():
+    """Use the first selected object to drive the offset parent matrix of all
+    the other selected objects."""
     def __init__(self):
-        pass
-
-    def icon(self):
-        return 'moduleEmpty'
-    
-    def tooltip(self):
-        tooltip=["Create empty modules\n",
-                 "This function will either prompt you for information,\n",
-                 "or work from the currently selected placement locators."]
-        return ''.join(tooltip)
+        self.icon='' # TODO
+        self.tooltip=["Connect offset parent matrix\n",
+            "The first selected object acts as parent."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        # TODO: refactor, move that to portoModules
-        def create_empty(moduleData):
-            empty=moduleClasses.EmptyModule(name=moduleData['name'],
-                                            side=moduleData['side'],
-                                            parentModule=moduleData['parentModule'])
-            if not empty.exists():
-                empty.build_module()
-            elif not mayaUtils.node_exists(empty.get_placement_group_name(), 'transform'):
-                empty.create_placement_group()
-            return empty
+        messages = ["# connect_offset_parent_matrix() - "]
+        # Get selection
+        selection = cmds.ls(sl=True)
+        if not selection:
+            messages.append("no object selected. Skipped.")
+            cmds.warning(''.join(messages))
+            return
+        if len(selection)<2:
+            messages.append("not enough objects selected")
+            raise Exception(''.join(messages))
         
+        # Unpack
+        parent=selection[0]
+        children=selection[1:]
+
+        # Apply
+        for child in children:
+            constraints.offset_parent_matrix(child, parent)
+        return
+    #
+
+
+class create_empty_module(): # TODO WIP
+    """Create an EmptyModule. If placement locators are selected, create modules
+    that match their data."""
+    def __init__(self):
+        self.icon='moduleEmpty'
+        self.tooltip=["Create empty modules\n",
+            "This function will either prompt you for information,\n",
+            "or work from the currently selected placement locators."]
+
+    @mayaUtils.undo_chunk()
+    def __call__(self):
         # Get selection and study it
         # TODO: refactor, function "get_selected_placement_locs"
-        selection = cmds.ls(sl=True, dagObjects = True, transforms=True)
+        selection = cmds.ls(sl=True)
         locs = []
         if selection:
             locs = [selected for selected in selection
@@ -78,7 +88,13 @@ class create_empty_module():
             # TODO
             cmds.warning('create Empty module, no selection: TODO')
             # prompt for data, create empty module
-            create_empty(moduleData)
+            portoModules.create_empty(name=moduleData['name'],
+                                      side=moduleData['side'],
+                                      parentModule=moduleData['parentModule'])
+            empty=portoModules.create_empty(
+                    name=moduleData['name'],
+                    side=moduleData['side'],
+                    parentModule=moduleData['parentModule'])
             return
         else:
             # Placement locators selected. Build module from them.
@@ -95,7 +111,10 @@ class create_empty_module():
                 if not parent:
                     # No parent: nothing more to do
                     moduleData['parentModule'] = None
-                    empty = create_empty(moduleData)
+                    empty=portoModules.create_empty(
+                        name=moduleData['name'],
+                        side=moduleData['side'],
+                        parentModule=moduleData['parentModule'])
                     locReparenting[loc] = empty.get_placement_group_name()
                     continue
                 elif portoModules.is_placement_loc(parent[0]):
@@ -108,16 +127,25 @@ class create_empty_module():
                         # Parent belongs to the same chain as the current loc
                         moduleData['parentModule'] = None
                         locReparenting[loc] = parent[0]
-                        create_empty(moduleData)
+                        portoModules.create_empty(
+                            name=moduleData['name'],
+                            side=moduleData['side'],
+                            parentModule=moduleData['parentModule'])
                         continue
                     else:
                         moduleData['parentModule']=moduleClasses.PortoModule(
                                                    name=decomposedParent['name'],
                                                    side=decomposedParent['side'])
-                        empty = create_empty(moduleData)
+                        empty=portoModules.create_empty(
+                            name=moduleData['name'],
+                            side=moduleData['side'],
+                            parentModule=moduleData['parentModule'])
                         locReparenting[loc] = empty.get_placement_group_name()
                         continue
-                empty = create_empty(moduleData)
+                empty=portoModules.create_empty(
+                        name=moduleData['name'],
+                        side=moduleData['side'],
+                        parentModule=moduleData['parentModule'])
                 locReparenting[loc] = empty.get_placement_group_name()
                 # Loop end
             # Reparent placement locators
@@ -134,15 +162,9 @@ class create_loc_from_selection(object):
     Works with transforms and components.
     """
     def __init__(self):
-        pass
-
-    def icon(self):
-        return 'selectionToLocator'
-    
-    def tooltip(self):
-        tooltip=["Selection to locator\n",
-                 "Create a locator on the selected objects or components.",]
-        return ''.join(tooltip)
+        self.icon='selectionToLocator'
+        self.tooltip=["Selection to locator\n",
+            "Create a locator on the selected objects or components."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -209,15 +231,9 @@ class create_hierarchy_from_selection_order(object):
     The third...
     """
     def __init__(self):
-        pass
-
-    def icon(self):
-        return 'selectionToHierarchy'
-    
-    def tooltip(self):
-        tooltip=["Selection to hierarchy\n",
-                 "Parent all selected objects together, by order of selection."]
-        return ''.join(tooltip)
+        self.icon='selectionToHierarchy'
+        self.tooltip=["Selection to hierarchy\n",
+            "Parent all selected objects together, by order of selection."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -271,15 +287,9 @@ class create_hierarchy_from_selection_order(object):
 class increment_save(object):
     """Increment save the current scene."""
     def __init__(self):
-        pass
-
-    def icon(self):
-        return 'incrementSave'
-    
-    def tooltip(self):
-        tooltip=["Increment save\n",
-                 "Save the current scene into a new, incremented, file.\n",]
-        return ''.join(tooltip)
+        self.icon='incrementSave'
+        self.tooltip=["Increment save\n",
+            "Save the current scene into a new, incremented, file.\n"]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -290,13 +300,8 @@ class increment_save(object):
 class reverse_selection_order(object):
     """Reverse the selection order."""
     def __init__(self):
-        pass
-
-    def icon(self):
-        return 'reverseSelectionOrder'
-    
-    def tooltip(self):
-        return "Reverse selection order"
+        self.icon='reverseSelectionOrder'
+        self.tooltip="Reverse selection order"
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -313,15 +318,9 @@ class reverse_selection_order(object):
 class quickplace_selection_multiple_followers(object):
     """Place all the selected objects like the first one."""
     def __init__(self):
-        pass
-
-    def icon(self):
-        return 'quickplaceMultiple'
-    
-    def tooltip(self):
-        tooltip=["Quickplace selection multiple followers\n",
-                 "Places all the selected objects like the first one."]
-        return ''.join(tooltip)
+        self.icon='quickplaceMultiple'
+        self.tooltip=["Quickplace selection multiple followers\n",
+            "Places all the selected objects like the first one."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -348,15 +347,9 @@ class quickplace_selection_multiple_followers(object):
 class quickplace_selection_single_follower(object):
     """Place the last selected object at the center of the other objects."""
     def __init__(self):
-        pass
-
-    def icon(self):
-        return 'quickplaceSingle'
-    
-    def tooltip(self):
-        tooltip=["Quickplace selection single follower\n",
-                 "Places the last selected object at the center of the other objects."]
-        return ''.join(tooltip)
+        self.icon='quickplaceSingle'
+        self.tooltip=["Quickplace selection single follower\n",
+            "Places the last selected object at the center of the other objects."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):

@@ -1,2 +1,1 @@
-"""Package holding all of PoRTo's data and preferences.
-"""
+"""Package holding data and preferences for both PoRTo and Maya."""

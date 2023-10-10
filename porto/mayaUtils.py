@@ -1,12 +1,14 @@
 """Collection of basic functions to use inside Maya.
+
 This module is meant to be imported in other PoRTo modules.
-If a function needs another module from porto, it does NOT belong here.
 """
 
 from maya import cmds
+from maya.api import OpenMaya # API 2.0
 
 import re
 
+# Beware of circular imports: this module is used pretty much everywhere
 import utils
 
 
@@ -125,7 +127,7 @@ def create_discrete_node(nodeName, nodeType):
             - nodeName: str.
                 How to name the node.
     """
-    cmds.createNode(nodeType, name=nodeName)
+    create_node(nodeName, nodeType)
     cmds.setAttr(nodeName + '.isHistoricallyInteresting', 0)
     return
 
@@ -159,6 +161,39 @@ def create_node(nodeName, nodeType):
     else:
         cmds.createNode(nodeType, name = nodeName)
     return True
+
+
+def decompose_matrix(matrixToDecompose):
+    """Decompose a matrix into a dictionary holding translate, rotate, scale,
+    shear.
+
+    Rotate values are given in the default XYZ order.
+
+        Args:
+            - matrixToDecompose: list of 16 floats.
+    """
+    mtx=OpenMaya.MMatrix(matrixToDecompose)
+    transformationMtx=OpenMaya.MTransformationMatrix(mtx)
+
+    # Get channels in world space
+    worldSpace=OpenMaya.MSpace.kWorld
+
+    translation=transformationMtx.translation(worldSpace) # OpenMaya.MVector
+    scale=transformationMtx.scale(worldSpace) # list
+    shear=transformationMtx.shear(worldSpace) # list
+
+    # Rotate values are returned in radians
+    eulerRotation=transformationMtx.rotation(asQuaternion=False) # OpenMaya.MEulerRotation
+
+    # Convert to degree
+    rotate=[OpenMaya.MAngle(axis).asDegrees() for axis in eulerRotation]
+
+    # Build result
+    result={'translate': list(translation),
+            'rotate': rotate,
+            'scale': scale,
+            'shear': shear}
+    return result
 
 
 def flatten_components_list(listToFlatten):
@@ -210,7 +245,7 @@ def flatten_components_list(listToFlatten):
     return flattened
 
 
-def force_add_attribute(nodeName, attributeName, attributeType, **kwargs):
+def force_add_attribute(nodeName, attributeName, **kwargs):
     """Forcefully create an attribute on the given node: delete any conflicting
     attribute and then add the new one.
     
@@ -219,14 +254,12 @@ def force_add_attribute(nodeName, attributeName, attributeType, **kwargs):
                 Name of the node which will receive the attribute.
             - attributeName: str.
                 Name of the attribute to create.
-            - attributeType: str.
-                Type of the attribute to create: double, float, message...
     """
     # Look for conflicts and delete them
     if cmds.attributeQuery(attributeName, node=nodeName, exists=True):
         cmds.deleteAttr(nodeName + '.' + attributeName)
     # Create attribute
-    cmds.addAttr(nodeName, ln=attributeName, at=attributeType, **kwargs)
+    cmds.addAttr(nodeName, ln=attributeName, **kwargs)
     return
 
 
@@ -429,6 +462,23 @@ def node_exists(nodeName, nodeType):
     return True
 
 
+def parent(child, parent):
+    """Parent the child object to the parent object.
+    
+        Args:
+            - child: str.
+            - parent: str.
+    """
+    relatives = cmds.listRelatives(child, parent=True)
+
+    if relatives==None: currentParent=None
+    else: currentParent=relatives[0]
+
+    if not currentParent == parent:
+        cmds.parent(child, parent)
+    return
+
+
 def prompt_for_text(title, message):
     """Display a prompt window that asks the user for a text input. Return the
     user's input. Return None if the user dismissed the prompt.
@@ -449,31 +499,6 @@ def prompt_for_text(title, message):
     if result == 'OK':
         return cmds.promptDialog(query=True, text=True)
     return None
-
-
-def set_default_value(attributePath, value):
-    """Set the attribute default's value to the specified value.
-    
-        Args:
-            - attributePath: str.
-            - value: any type.
-    """
-    # get attribute type
-    # action depends on attr type (flag might need to be precised)
-    cmds.addAttr(attributePath, e=1, dv=value)
-    return
-
-
-def set_override_color(objectName, colorIndex):
-    """Set the overrideColor attribute of the object to the given color index.
-
-        Args:
-            - objectName: str.
-            - colorIndex: int.
-    """
-    cmds.setAttr(objectName + 'Shape.overrideEnabled', 1)
-    cmds.setAttr(objectName + 'Shape.overrideColor', colorIndex)
-    return
 
 
 def rename_shapes(nodeName):
@@ -511,20 +536,28 @@ def reset_matrix_attribute(attributeFullpath, order=4):
     return
 
 
-def parent(child, parent):
-    """Parent the child object to the parent object.
+def set_default_value(attributePath, value):
+    """Set the attribute default's value to the specified value.
     
         Args:
-            - child: str.
-            - parent: str.
+            - attributePath: str.
+            - value: any type.
     """
-    relatives = cmds.listRelatives(child, parent=True)
+    # get attribute type
+    # action depends on attr type (flag might need to be precised)
+    cmds.addAttr(attributePath, e=1, dv=value)
+    return
 
-    if relatives==None: currentParent=None
-    else: currentParent=relatives[0]
 
-    if not currentParent == parent:
-        cmds.parent(child, parent)
+def set_override_color(objectName, colorIndex):
+    """Set the overrideColor attribute of the object to the given color index.
+
+        Args:
+            - objectName: str.
+            - colorIndex: int.
+    """
+    cmds.setAttr(objectName + 'Shape.overrideEnabled', 1)
+    cmds.setAttr(objectName + 'Shape.overrideColor', colorIndex)
     return
 
 

@@ -1,14 +1,14 @@
-"""Collection of functions that work around constraints.
-
-Some functions create node setups for specific kinds of constraint.
-Some functions use temporary constraints to snap an object onto another.
-"""
+"""Collection of functions that handle constraints."""
 
 from maya import cmds
 
 from data import nomenclature
 import mayaUtils
 import naming
+import utils
+
+
+# TODO function to remove/clean an offset parent matrix connection
 
 
 def apply_and_delete_orient_constraint(masters, follower):
@@ -61,6 +61,59 @@ def blended_prebound_matrix_constraint(follower, followerRef, masters,
         groupBasename='PreBoundMtxCns', channels=['translate', 'rotate']):
     # TODO
     pass
+    return
+
+
+def offset_parent_matrix(child, parent):
+    """Connect a parent node to a child node's offsetParentMatrix connection.
+    
+    Create a node system to prevent the child from being moved right after the
+    connection, if the parent was not at the origin of the world."""
+    # Build names
+    nodesFormat = '{parentPrefix}{detail}_{suffix}'
+    holdMatrixElts = {'detail': 'outputOffset',
+                         'suffix': naming.from_node_type_get_suffix('holdMatrix')}
+    multMatrixElts = {'detail': 'output',
+                      'suffix': naming.from_node_type_get_suffix('multMatrix')}
+    
+    decompose=naming.decompose_porto_name(parent)
+    if decompose['detail']:
+        '''parent respects PoRTo nomenclature and is of the format:
+                    {side}_{name}_{detail}_{suffix}'''
+        parentPrefix = naming.remove_suffix(parent)
+
+        # Update dictionaries: capitalize first letter
+        holdMatrixElts['detail'] = naming.capitalize_respectfully(holdMatrixElts['detail'])
+        multMatrixElts['detail'] = naming.capitalize_respectfully(multMatrixElts['detail'])
+    else:
+        parentPrefix = naming.remove_suffix(parent) + '_'
+
+    holdMatrix = nodesFormat.format(parentPrefix=parentPrefix,
+                                       detail=holdMatrixElts['detail'],
+                                       suffix=holdMatrixElts['suffix'])
+    multMatrix = nodesFormat.format(parentPrefix=parentPrefix,
+                                    detail=multMatrixElts['detail'],
+                                    suffix=multMatrixElts['suffix'])
+    
+    # Create nodes
+    mayaUtils.create_discrete_node(nodeName=multMatrix, nodeType='multMatrix')
+    
+    mayaUtils.create_discrete_node(nodeName=holdMatrix, nodeType='holdMatrix')
+    cmds.setAttr('{holdMatrix}.inMatrix'.format(holdMatrix=holdMatrix),
+                 cmds.getAttr('{parent}.worldInverseMatrix[0]'.format(parent=parent)),
+                 type='matrix')
+
+    # Connect
+    cmds.connectAttr('{holdMatrix}.outMatrix'.format(holdMatrix=holdMatrix),
+                     '{multMatrix}.matrixIn[0]'.format(multMatrix=multMatrix),
+                     force=True)
+    cmds.connectAttr('{parent}.worldMatrix[0]'.format(parent=parent),
+                     '{multMatrix}.matrixIn[1]'.format(multMatrix=multMatrix),
+                     force=True)
+    cmds.connectAttr('{multMatrix}.matrixSum'.format(multMatrix=multMatrix),
+                     '{child}.offsetParentMatrix'.format(child=child),
+                     force=True)
+
     return
 
 
@@ -265,13 +318,9 @@ def quickplace(masters, followers, channels=['translate', 'rotate', 'scale']):
             raise TypeError("# quickplace - arguments should be str or lists of str.")
         
     # Adjust arguments: they must be lists.
-    # TODO move to utils module
-    def makelist(arg):
-        return [arg] if not isinstance(arg, list) else arg
-    
-    masters = makelist(masters)
-    followers = makelist(followers)
-    channels = makelist(channels)
+    masters = utils.makelist(masters)
+    followers = utils.makelist(followers)
+    channels = utils.makelist(channels)
 
     # Check the values in channels: only transformation channels are accepted
     loweredChannels = [channel.lower() for channel in channels]

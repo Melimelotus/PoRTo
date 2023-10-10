@@ -1,7 +1,8 @@
 """Main script package for PoRTo.
 
-Append current folder to os.path and ensure that future imports of subpackage
-do not fail."""
+Append current folder to os.path: ensure that future imports of subpackage
+do not fail.
+"""
 
 import os, sys
 

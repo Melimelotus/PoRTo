@@ -2,8 +2,8 @@
 
 Rigging modules are premade blocks of nodes that can be created at any time.
 They are meant to simplify the workflow of the rigger: instead of losing time
-with creating the nodes setups, the rigger can let PoRTo do that stuff and focus
-on the placement and hierarchy aspects of the rig.
+on the creation of nodes setups, the rigger can let PoRTo deal with that and
+focus on other things.
 Examples of rigging modules include: basic chain, tendon, IK/FK leg, ribbon...
 """
 
@@ -11,73 +11,12 @@ from maya import cmds
 
 from data import nomenclature
 from data import portoPreferences
+import constraints
 import mayaUtils
 import portoScene
 import utils
 
-
-class PortoName(object):
-    """Class to define and build a PoRTo name that follows the nomenclature.
-    
-    Nomenclature format defined by PoRTo: '{side}_{name}_{freespace}_{suffix}'
-    - {side} can only be 'l', 'r', 'c', 'u' (left, right, center, unsided);
-    - {name} contains the name of the module;
-    - {freespace} is optional;
-    - {suffix} can only be three letters long.
-
-        Attrs:
-            - side: str.
-                Side of the object being named. Allowed values:
-                {left: 'l', right: 'r', center: 'c', unsided: 'u'}
-            - name: str.
-                Name of the object. This name will be reused in all node systems
-                related to the object.
-            - freespace: str.
-                Optional.
-            - suffix: str.
-                The suffix defines the node type or purpose of the object.
-                It must be exactly three letters long.
-                PoRTo defines specific suffixes for common nodes or purposes.
-    """
-
-    def __init__(self, side, name, suffix, freespace=''):
-        """Check validity of name being built and initialize."""
-        # TODO check for illegal characters
-
-        # Checks
-        for attr in [side, name, suffix, freespace]:
-            if not isinstance(attr, str):
-                raise TypeError("# Unable to build PortoName: all attributes must be string type.")
-            if '_' in attr:
-                raise ValueError("# Unable to build PortoName: illegal character found in attribute '{attr}'".format(attr=attr))
-            
-        if not side in nomenclature.allowedSideValues:
-            raise ValueError("# Unable to build PortoName: side must be 'l', 'r', 'c', or 'u'.")
-        
-        if not len(suffix) == nomenclature.maxSuffixLength:
-            raise ValueError("# Unable to build PortoName: suffix must be exactly three letters long.")
-        
-        # Build
-        self.side=side
-        self.name=name
-        self.suffix=suffix
-        self.freespace=freespace
-    
-    def __repr__(self):
-        """Return the class data."""
-        msg = "PortoName(side='{}', name='{}', freespace='{}', suffix='{}')".format(
-            self.side, self.name, self.freespace, self.suffix)
-        return msg
-    
-    def build_name(self):
-        """Build and return the name of the object."""
-        name = ["{side}_{name}_".format(side=self.side, name=self.name)]
-        if not self.freespace=='':
-            name.append("{freespace}_".format(freespace=self.freespace))
-        name.append("{suffix}".format(suffix=self.suffix))
-
-        return ''.join(name)
-
+# TODO inherit transforms: false for placement group
 
 class PortoModule(object):
     """Define a PoRTo rigging module.
@@ -87,13 +26,16 @@ class PortoModule(object):
     All modules have a 'side' that roughly indicates its position in the scene:
     left, right, center, unsided... Left/right modules can be mirrored.
     All modules are either parented directly under the rig group or under
-    another module.
-    The 'parentModule' attribute of a module defines who the module should be
-    parented to.
+    another module: the 'parentModule' attribute of a module defines who
+    the module should be parented to.
     The 'parentingOutput' attribute of a module defines which node of the module
     system should be used to drive children.
     
         Attrs:
+            - moduleType: str, default = 'PortoModule'
+                The name of the class.
+                An extra attribute 'PortoModule' will be added to each module,
+                and its value will be moduleType.
             - name: str.
                 The name of the module.
                 Allowed characters: lowercase and uppercase letters, numbers.
@@ -133,11 +75,11 @@ class PortoModule(object):
             raise TypeError(''.join(msg))
         
         # Set attrs
-        self.side=side
         self.name=name
+        self.side=side
+        self.moduleType=self.__class__.__name__ #TODO TEST!!!
         self.parentModule=parentModule
         self.parentingOutput=parentingOutput
-
         return
 
     def __repr__(self):
@@ -150,14 +92,38 @@ class PortoModule(object):
     def build_module(self):
         """Build the module's root hierarchy.
         
-        Create and parent the root group.
+        Create the root group.
+        Create and set the attributes on the root group.
         Create the placement group.
+        Parent the module.
         """
         self.create_root_group()
-        self.parent_module()
+        self.create_attributes()
+        self.set_module_type_attribute()
+        self.set_parent_module_attribute()
+
         self.create_placement_group()
+
+        self.parent_module()
         return
     
+    def create_attributes(self):
+        """Create module attributes on the root group."""
+        rootGroupName = self.get_root_group_name()
+        # Module Type
+        mayaUtils.force_add_attribute(nodeName=rootGroupName,
+                                      attributeName='moduleType',
+                                      dataType='string')
+        # Parent module
+        mayaUtils.force_add_attribute(nodeName=rootGroupName,
+                                      attributeName='parentModule',
+                                      attributeType='message')
+        # Parenting output
+        mayaUtils.force_add_attribute(nodeName=rootGroupName,
+                                      attributeName='parentingOutput',
+                                      attributeType='message')
+        return
+
     def create_placement_group(self):
         """Create the module's placement group."""
         placementGroupName = self.get_placement_group_name()
@@ -171,17 +137,8 @@ class PortoModule(object):
     def create_root_group(self):
         """Create the module's root group and its attributes."""
         rootGroupName = self.get_root_group_name()
-
-        # Create group and attributes
         mayaUtils.create_node(nodeName = rootGroupName,
                               nodeType = 'transform')
-
-        mayaUtils.force_add_attribute(nodeName=rootGroupName,
-                                      attributeName='parentModule',
-                                      attributeType='message')
-        mayaUtils.force_add_attribute(nodeName=rootGroupName,
-                                      attributeName='parentingOutput',
-                                      attributeType='message')
         return
 
     def exists(self):
@@ -207,39 +164,32 @@ class PortoModule(object):
         """Return the name of the module's placement group."""
         return "{side}_{name}_placement_grp".format(side=self.side, name=self.name)
     
-    def parent_module(self):
+    def parent_module(self): # TODO WIP
         """Parent the module to its specified parent"""
-        # No parent specified: clean and parent to main rig group
+        # No parent specified: parent to root of rig group
         if self.parentModule==None:
-            self.parent_module_to_main_rigging_group()
+            self.parent_module_to_rig_root()
             return
         
-        self.parent_module_to_main_rigging_group()
+        self.parent_module_to_rig_root()
 
-        # Check existence of parentModule. Warn and skip if it does not exist.
+        # Parent specified: check its existence
         messages = ["# PortoModule class, parent_module() method - "]
         if not self.parentModule.exists():
             messages.append("parent does not exist yet. Skipped parenting.")
             cmds.warning(''.join(messages))
             return
 
-        # Connect message attr to parentModule attr
-        messageAttr = '{parentRootGroup}.message'.format(
-            parentRootGroup = self.parentModule.get_root_group_name())
-        parentModuleAttr = '{rootGroup}.parentModule'.format(
-            rootGroup = self.get_root_group_name())
-        
-        cmds.connectAttr(messageAttr, parentModuleAttr, f=True)
-
-        # Get the parentingOutput attribute of the parent module: which node
-        # should our module really follow?
+        # Parent exists: get the parentingOutput attribute of the parent module
+        # Which node should our module really follow?
         parentOutput = self.parentModule.parentingOutput
 
         if parentOutput == None:
             # Follow root group.
             '''Connect to offset parentMatrix attribute'''
-            # TODO
-            pass
+            constraints.offset_parent_matrix(
+                child=self.get_root_group_name(),
+                parent=self.parentModule.get_root_group_name())
             return
 
         # Check existence of the node specified in parentOutput.
@@ -249,17 +199,20 @@ class PortoModule(object):
         if not parentOutputExists:
             messages.append("parent does not exist yet. Skipped parenting.")
             cmds.warning(''.join(messages))
+
              # Follow root group.
-            '''Connect to offset parentMatrix attribute'''
-            # TODO
+            constraints.offset_parent_matrix(
+                child=self.get_root_group_name(),
+                parent=self.parentModule.get_root_group_name())
             return
 
         # Parent
-        '''Connect to offset parentMatrix attribute'''
-        # TODO
+        constraints.offset_parent_matrix(
+                child=self.get_root_group_name(),
+                parent=self.parentModule.parentingOutput)
         return
 
-    def parent_module_to_main_rigging_group(self):
+    def parent_module_to_rig_root(self):
         """Parent the module to the main rigging group and clean the module's
         data to erase any trace of a previous parent.
         
@@ -273,16 +226,9 @@ class PortoModule(object):
         portoScene.create_rig_modules_group()
         mayaUtils.parent(child = self.get_root_group_name(),
                          parent = portoPreferences.riggingModulesGroupName)
-        
-        # Connect to the module's parentModule message attribute.
-        rigGroupMessage = '{rigGroupName}.message'.format(
-            rigGroupName = portoPreferences.riggingModulesGroupName)
-        parentModuleAttr = '{rootGroupName}.parentModule'.format(
-            rootGroupName=rootGroupName)
-        
-        cmds.connectAttr(rigGroupMessage, parentModuleAttr, f=True)
 
         # Remove any incoming offsetParentMatrix and reset values
+        # TODO REFACTOR "CLEAN OFFSET PARENT MATRIX"
         offsetParentMatrix = '{rootGroupName}.offsetParentMatrix'.format(
             rootGroupName=rootGroupName)
         mayaUtils.break_incoming_connection(offsetParentMatrix)
@@ -302,7 +248,7 @@ class PortoModule(object):
 
         # Parent to the parent module
         if self.parentModule==None:
-            self.parent_module_to_main_rigging_group()
+            self.parent_module_to_rig_root()
         else:
             # Check parent existence: RAISE AN ERROR IF IT DOES NOT EXIST
             # "publish aborted: parent does not exist in the scene."
@@ -311,6 +257,41 @@ class PortoModule(object):
             # Clean offsetParentMatrix connections
             # TODO
             pass
+        return
+    
+    def set_parent_module_attribute(self):
+        """Set the parentModule attribute by connecting it to the message
+        attribute of the parent's root group."""
+        messages=["# PortoModule class, set_parent_module_attribute() method - "]
+
+        # Build names
+        connectTo = '{rootGroupName}.parentModule'.format(
+            rootGroupName=self.get_root_group_name())
+        
+        connectFrom = ''
+        if self.parentModule==None:
+            # No parent module specified: connect to rig.
+            nodeToConnectFrom = portoPreferences.riggingModulesGroupName
+        elif not self.parentModule.exists():
+            # Parent module is specified but does not exist: connect to rig.
+            messages.append("parent does not exist yet. Connecting to rig group.")
+            cmds.warning(''.join(messages))
+            nodeToConnectFrom = portoPreferences.riggingModulesGroupName
+        else:
+            # Connect to parent module.
+            nodeToConnectFrom = self.parentModule.get_root_group_name()
+        connectFrom ='{nodeToConnectFrom}.message'.format(nodeToConnectFrom=nodeToConnectFrom)
+        
+        # Connect
+        cmds.connectAttr(connectFrom, connectTo, f=True)
+        return
+        
+    def set_module_type_attribute(self):
+        """Set the moduleType attribute to match the module's class."""
+        cmds.setAttr('{rootGroupName}.moduleType'.format(
+                        rootGroupName=self.get_root_group_name()),
+                     self.moduleType,
+                     type='string')
         return
     #
 
@@ -343,7 +324,11 @@ class ChainModule(PortoModule): # TODO
     """
 
     def __init__(self, side, name, chainLength, parentModule=None, parentingOutput=None):
-        PortoModule.__init__(self, side, name, parentModule, parentingOutput)
+        PortoModule.__init__(self,
+                             side=side,
+                             name=name,
+                             parentModule=parentModule,
+                             parentingOutput=parentModule)
         self.chainLength = chainLength
         return
     
@@ -361,4 +346,5 @@ class TendonModule(PortoModule): # TODO
         # TODO
         return
     #
+
 #

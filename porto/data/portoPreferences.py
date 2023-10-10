@@ -1,5 +1,5 @@
-"""Contains the data that defines PoRTo's preferences.
-"""
+"""Contains the data that defines PoRTo's preferences."""
+
 
 # File
 nameElements = ['asset','step','version'] # Order matters
@@ -10,7 +10,9 @@ defaultAssetName = "asset"
 meshGroupName = "mesh"
 riggingModulesGroupName = "rig"
 
-    
+# Modules
+portoModuleAttrName = "portoModule"
+
 def get_asset_name_regex():
     """Return the regular expression that defines how an asset must be named
     in order to be recognized by PoRTo.
@@ -20,6 +22,7 @@ def get_asset_name_regex():
     """
     return '((?:[a-z]|[0-9](?![a-z])|[A-Z](?![A-Z]))+)'
 
+
 def get_extension_regex():
     """Return the regular expression that defines how an extension must be
     named in order to be recognized by PoRTo.
@@ -27,6 +30,7 @@ def get_extension_regex():
     Extensions can only hold lowercase letters.
     """
     return '[.]([a-z]+)$'
+
 
 def get_step_regex():
     """Return the regular expression that defines how a step must be named
@@ -36,6 +40,7 @@ def get_step_regex():
     """
     return '([a-z]+)'
 
+
 def get_version_regex():
     """Return the regular expression that defines how the version must be
     written in order to be recognized by PoRTo.
@@ -44,6 +49,7 @@ def get_version_regex():
     several numbers. The amount of numbers is defined by versionPadding."""
     unformattedRegex = '((?:[vV]|version)(?:[0-9]{{{versionPadding}}}))'
     return unformattedRegex.format(versionPadding = versionPadding)
+
 
 def build_filename_format():
     """Build the expected format for all filenames.
@@ -58,6 +64,7 @@ def build_filename_format():
 
     filenameFormat = '{joinedElements}{{extension}}'.format(joinedElements=joinedElements)
     return filenameFormat
+
 
 def build_filename_regex():
     """Build the regular expression that defines how a Maya scene file must

@@ -1,8 +1,7 @@
 from maya import cmds
 
-
 def get_cv_coords(nurbsObject):
-    '''Returns a list holding the coords of every CV of a NURBS object.'''
+    """Return a list holding the coords of every CV of a NURBS object"""
     # TODO : CBB
     # Get amount of CV
     spans = cmds.getAttr(nurbsObject+'.spans')
@@ -26,3 +25,5 @@ def get_cv_coords(nurbsObject):
         coordsStr = coordsStr.replace(find, replace)
 
     return coordsStr
+
+#

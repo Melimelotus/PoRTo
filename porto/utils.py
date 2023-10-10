@@ -1,6 +1,7 @@
 """Collection of functions useful for coding.
-    If a function is meant to be used in Maya, it does NOT belong here.
-    If a function needs another module from PoRTo, it does NOT belong here.
+
+No other module from PoRTo or Maya should be imported here.
+If a function is meant to be used in Maya, it does NOT belong here.
 """
 
 import re
@@ -153,6 +154,11 @@ def get_padded_increment(numberToIncrement, padding):
     incremented = numberToIncrement + 1
     padded = str(incremented).zfill(padding)
     return padded
+
+
+def makelist(arg):
+    '''Append the argument to a list if it was not already a list.'''
+    return [arg] if not isinstance(arg, list) else arg
 
 
 def respects_regex_pattern(stringToCheck, patternString):

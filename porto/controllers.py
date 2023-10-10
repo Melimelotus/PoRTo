@@ -1,14 +1,14 @@
-"""Collection of functions related to the creation of controllers and joints.
-"""
-# TODO labellize controllers
+"""Collection of functions that handle controllers and joints."""
 
 from maya import cmds
 
 from data import curveShapes
+from data import nomenclature
 import mayaUtils
 import naming
 
 
+# TODO label controllers
 def create_controller_curve(name, shape, linear=True):
     """Create a controller of the given shape.
     
@@ -23,9 +23,7 @@ def create_controller_curve(name, shape, linear=True):
                 cubic."""
     create_shaped_curve(name, shape, linear)
     mayaUtils.clean_history(name)
-    mayaUtils.rename_shapes(name)
     mayaUtils.hide_shapes_from_history(name)
-
     return
 
 
@@ -39,28 +37,33 @@ def create_shaped_curve(name, shape, linear=True):
                 Shape to give the curve. See data.controllerShapes for a dic of
                 all available shapes.
             - linear: bool, default = True.
-                Changes the degree of the curve. It can be either linear or
-                cubic.
+                Changes the degree of the curve.
+                It will be either linear (default) or cubic.
     """
-    shapeCoords = curveShapes.curve_coords_dic()[shape]
-    cmds.curve(degree = 1, n = name, p = shapeCoords)
+    coords = curveShapes.curve_coords_dic()[shape]
+    degree = {True: 1, False: 3}
+
+    cmds.curve(degree=degree[linear],
+               n=name,
+               p=coords)
+    mayaUtils.rename_shapes(name)
     return
 
 
 def decompose_joint_name_and_label(jointName):
     """Decompose the given name following PoRTo's nomenclature, and label the
     joint accordingly."""
-    decomposition = naming.decompose_porto_name(jointName)
-    label_joint_side(jointName, decomposition['side'])
-    label_joint_type(jointName, decomposition['name'])
+    decompose=naming.decompose_porto_name(jointName)
+    label_joint_side(jointName, decompose['side'])
+    label_joint_type(jointName, decompose['name'])
     return
 
 
 def label_joint_side(jointName, sideLetter):
     """Set the 'side' label attribute of the joint.
 
-    Raise an error if sideLetter is not of the accepted values ('l', 'r', 'c',
-    or 'u').
+    Raise an error if sideLetter is not of the accepted values (see data,
+    nomenclature.sides).
     
         Args:
             - jointName: str.
@@ -68,8 +71,11 @@ def label_joint_side(jointName, sideLetter):
             - sideLetter: str.
                 Letter that indicates the joint's side.
     """
-    if not sideLetter in ['l', 'r', 'c', 'u']:
-        raise ValueError("# label_joint_side - key argument sideLetter does not have one of the expected values.")
+    sideValues=nomenclature.sides.keys()
+    if not sideLetter in sideValues:
+        messages=["# label_joint_side - key argument sideLetter is not one of the expected values.\n",
+                  "# label_joint_side - expected values: {sideValues}".format(sideValues=sideValues)]
+        raise ValueError(''.join(messages))
     
     sideLabels = {'c': 0,
                   'l': 1,
