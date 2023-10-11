@@ -104,6 +104,7 @@ class PortoModule(object):
 
         self.create_placement_group()
 
+        self.parent_module_to_rig_root()
         self.parent_module()
         return
     
@@ -160,56 +161,68 @@ class PortoModule(object):
         """Return the name of the module's root group."""
         return "{side}_{name}_grp".format(side=self.side, name=self.name)
 
+    def get_parenting_output(self):
+        """Return the name of the node that the parentingOutput attribute is
+        currently connected to."""
+        parentingOutput = '{rootGroupName}.parentingOutput'.format(
+            rootGroupName=self.get_root_group_name())
+        connections=cmds.listConnections(parentingOutput,
+                                         source=True)
+        if not connections:
+            return None
+        return connections[0]
+
     def get_placement_group_name(self):
         """Return the name of the module's placement group."""
         return "{side}_{name}_placement_grp".format(side=self.side, name=self.name)
     
-    def parent_module(self): # TODO WIP
+    def parent_module(self):
         """Parent the module to its specified parent"""
-        # No parent specified: parent to root of rig group
-        if self.parentModule==None:
+        messages = ["# PortoModule class, parent_module() method - "]
+
+        # Get parentModule and check value
+        parentModule = self.parentModule
+
+        if parentModule==None:
+            # No parent specified: parent to root of rig group
             self.parent_module_to_rig_root()
             return
-        
-        self.parent_module_to_rig_root()
 
-        # Parent specified: check its existence
-        messages = ["# PortoModule class, parent_module() method - "]
-        if not self.parentModule.exists():
+        if not parentModule.exists():
+            # Parent does not exist: parent to root of rig group
             messages.append("parent does not exist yet. Skipped parenting.")
             cmds.warning(''.join(messages))
+            self.parent_module_to_rig_root()
             return
 
-        # Parent exists: get the parentingOutput attribute of the parent module
-        # Which node should our module really follow?
-        parentOutput = self.parentModule.parentingOutput
+        # Parent exists: get its parentingOutput attribute and check value
+        parentOutput = parentModule.parentingOutput
+
+        # Clean existing offsetParentMatrix connection
+        constraints.clean_offset_parent_matrix(self.get_root_group_name())
 
         if parentOutput == None:
-            # Follow root group.
-            '''Connect to offset parentMatrix attribute'''
+            # Parent to root group
             constraints.offset_parent_matrix(
                 child=self.get_root_group_name(),
-                parent=self.parentModule.get_root_group_name())
+                parent=parentModule.get_root_group_name())
             return
 
-        # Check existence of the node specified in parentOutput.
-        # Warn and skip if it does not exist.
-        parentOutputExists = False #TODO
-
-        if not parentOutputExists:
+        # Check existence of parentingOutput
+        if not cmds.objExists(parentOutput):
             messages.append("parent does not exist yet. Skipped parenting.")
             cmds.warning(''.join(messages))
 
              # Follow root group.
             constraints.offset_parent_matrix(
                 child=self.get_root_group_name(),
-                parent=self.parentModule.get_root_group_name())
+                parent=parentModule.get_root_group_name())
             return
 
         # Parent
         constraints.offset_parent_matrix(
                 child=self.get_root_group_name(),
-                parent=self.parentModule.parentingOutput)
+                parent=parentModule.parentingOutput)
         return
 
     def parent_module_to_rig_root(self):

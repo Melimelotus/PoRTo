@@ -117,6 +117,24 @@ def camel_case_and_combine(strings):
     return newString
 
 
+def condense_porto_name(string):
+    """Condense a PoRTo name into {side}_{name}{Detail}{Suffix}. Add camel case.
+    """
+    # Decompose name
+    decompose=decompose_porto_name(string)
+    
+    # Build list of elements to camelCase and combine. Ignore empty elements.
+    toCombine=[decompose[element]
+                for element in ['name', 'detail', 'suffix']
+                if not decompose[element] in [None, '']]
+
+    condensed='{side}_{condensedName}'.format(
+        side=decompose['side'],
+        condensedName=camel_case_and_combine(toCombine))
+    
+    return condensed
+
+
 def create_group_name_from_string(basename, string):
     """Combine the given basename and string to build a group name.
 
@@ -267,7 +285,7 @@ def rebuild_string_without_underscores(string):
     
     # Split string and combine splitted elements together
     splittedString = string.split('_')
-    newString = combine_list_of_strings(splittedString)
+    newString = camel_case_and_combine(splittedString)
 
     return newString
 

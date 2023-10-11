@@ -118,7 +118,6 @@ def get_root_modules():
     return rootModules
 
 
-
 def is_placement_loc(obj):
     """Predicate. Return True if the object is a placement locator."""
     # Must be a locator
@@ -132,5 +131,16 @@ def is_placement_loc(obj):
     # Must end with _{placementSuffix}
     placementSuffix = utils.get_dic_keys_from_value('placement', nomenclature.suffixes_dagNodePurposes)[0]
     return obj.endswith('_{placementSuffix}'.format(placementSuffix=placementSuffix))
+
+
+def parent_modules(childModule, parentModule):
+    """Parent the selected modules together.
+        
+        Args:
+            - childModule: PortoModule
+            - parentModule: PortoModule
+    """
+    
+    return
 
 #

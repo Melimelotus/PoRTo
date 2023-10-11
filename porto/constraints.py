@@ -92,7 +92,6 @@ def clean_offset_parent_matrix(node):
     # Check if the source must be cleaned
     source_plug = node_incomingConnections[0]
 
-    # List source connections
     asDest=False
     asSrc=True
     if source_plug.connectedTo(asDest, asSrc):
@@ -117,27 +116,22 @@ def offset_parent_matrix(child, parent):
     Create a node system to prevent the child from being moved right after the
     connection, if the parent was not at the origin of the world."""
     # Build names
-    nodesFormat = '{parentPrefix}{detail}_{suffix}'
+    nodesFormat = '{parentPrefix}_{detail}_{suffix}'
     holdMatrixElts = {'detail': 'outputOffset',
-                         'suffix': naming.from_node_type_get_suffix('holdMatrix')}
+                      'suffix': naming.from_node_type_get_suffix('holdMatrix')}
     multMatrixElts = {'detail': 'output',
                       'suffix': naming.from_node_type_get_suffix('multMatrix')}
     
-    decompose=naming.decompose_porto_name(parent)
-    if decompose['detail']:
-        '''parent respects PoRTo nomenclature and is of the format:
-                    {side}_{name}_{detail}_{suffix}'''
-        parentPrefix = naming.remove_suffix(parent)
-
-        # Update dictionaries: capitalize first letter
-        holdMatrixElts['detail'] = naming.capitalize_respectfully(holdMatrixElts['detail'])
-        multMatrixElts['detail'] = naming.capitalize_respectfully(multMatrixElts['detail'])
+    # Build parentPrefix
+    if naming.respects_porto_nomenclature(parent):
+        parentPrefix=naming.condense_porto_name(parent)
     else:
-        parentPrefix = naming.remove_suffix(parent) + '_'
+        parentPrefix=naming.rebuild_string_without_underscores(parent)
+
 
     holdMatrix = nodesFormat.format(parentPrefix=parentPrefix,
-                                       detail=holdMatrixElts['detail'],
-                                       suffix=holdMatrixElts['suffix'])
+                                    detail=holdMatrixElts['detail'],
+                                    suffix=holdMatrixElts['suffix'])
     multMatrix = nodesFormat.format(parentPrefix=parentPrefix,
                                     detail=multMatrixElts['detail'],
                                     suffix=multMatrixElts['suffix'])

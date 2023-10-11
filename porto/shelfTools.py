@@ -5,6 +5,7 @@ None of these functions are meant to be imported anywhere else.
 """
 
 from maya import cmds
+from maya.api import OpenMaya # API 2.0
 
 from data import moduleClasses
 import constraints
@@ -98,6 +99,7 @@ class create_empty_module(): # TODO WIP
             return
         else:
             # Placement locators selected. Build module from them.
+            '''Build list of modules to create and dictionary of reparenting.'''
             locReparenting = {}
             for loc in locs:
                 # Decompose name
@@ -133,9 +135,13 @@ class create_empty_module(): # TODO WIP
                             parentModule=moduleData['parentModule'])
                         continue
                     else:
-                        moduleData['parentModule']=moduleClasses.PortoModule(
-                                                   name=decomposedParent['name'],
-                                                   side=decomposedParent['side'])
+                        parentModule = moduleClasses.PortoModule(
+                                            name=decomposedParent['name'],
+                                            side=decomposedParent['side'])
+                        if parentModule.exists():
+                            parentModule.parentingOutput=parentModule.get_parenting_output()
+                            
+                        moduleData['parentModule'] = parentModule
                         empty=portoModules.create_empty(
                             name=moduleData['name'],
                             side=moduleData['side'],
@@ -155,7 +161,7 @@ class create_empty_module(): # TODO WIP
     #
 
 
-class create_loc_from_selection(object):
+class create_loc_from_selection():
     """Create a locator placed in the middle of the active selection. Prompt the
     user for a name.
 
@@ -224,7 +230,7 @@ class create_loc_from_selection(object):
     #
 
 
-class create_hierarchy_from_selection_order(object):
+class create_hierarchy_from_selection_order():
     """Parent the selected objects to each other. Follow the selection order.
     The first element will be parented to the second.
     The second element will be parented to the third.
@@ -284,7 +290,7 @@ class create_hierarchy_from_selection_order(object):
     #
 
 
-class increment_save(object):
+class increment_save():
     """Increment save the current scene."""
     def __init__(self):
         self.icon='incrementSave'
@@ -297,7 +303,66 @@ class increment_save(object):
     #
 
 
-class reverse_selection_order(object):
+class parent_selected_modules():
+    """Parent the two selected modules together."""
+    def __init__(self):
+        self.icon=''
+        self.tooltip=["Name\n",
+            "Useful information"]
+
+    @mayaUtils.undo_chunk()
+    def __call__(self):
+        messages = ["# parent_selected_modules() - "]
+
+        # Get selection
+        MSelection = OpenMaya.MGlobal.getActiveSelectionList()
+        if not MSelection.length() == 2:
+            messages.append("not enough objects selected")
+            raise Exception(''.join(messages))
+        
+        # TODO: IF PARENT IS RIG GROUP, PARENT TO ROOT
+
+        # Unpack
+        child_obj = MSelection.getDependNode(0)
+        child_mFnDepNode = OpenMaya.MFnDependencyNode(child_obj)
+        child_name = child_mFnDepNode.name()
+
+        parent_obj = MSelection.getDependNode(1)
+        parent_mFnDepNode = OpenMaya.MFnDependencyNode(parent_obj)
+        parent_name = parent_mFnDepNode.name()
+
+        # Checks
+        for node in [child_name, parent_name]:
+            if not naming.respects_porto_nomenclature(node):
+                # Not dealing with a PoRTo node.
+                messages.append("one of the selected objects is not the root group of a PortoModule.")
+                raise Exception(''.join(messages))
+            if not naming.get_suffix(node) == 'grp':
+                # Not dealing with a root group.
+                messages.append("one of the selected objects is not the root group of a PortoModule.")
+                raise Exception(''.join(messages))
+
+        # TODO refactor: build portoModule from node name?
+        # Build PortoModule objects
+        decompose = naming.decompose_porto_name(child_name)
+        child = moduleClasses.PortoModule(side=decompose['side'],
+                                          name=decompose['name'])
+
+        decompose = naming.decompose_porto_name(parent_name)
+        parent = moduleClasses.PortoModule(side=decompose['side'],
+                                           name=decompose['name'])
+        parent.parentingOutput = parent.get_parenting_output()
+
+        # Parent modules
+        child.parentModule = parent
+        child.set_parent_module_attribute()
+        child.parent_module()
+        return
+
+    #
+
+
+class reverse_selection_order():
     """Reverse the selection order."""
     def __init__(self):
         self.icon='reverseSelectionOrder'
@@ -315,7 +380,7 @@ class reverse_selection_order(object):
     #
 
 
-class quickplace_selection_multiple_followers(object):
+class quickplace_selection_multiple_followers():
     """Place all the selected objects like the first one."""
     def __init__(self):
         self.icon='quickplaceMultiple'
@@ -344,7 +409,7 @@ class quickplace_selection_multiple_followers(object):
     #
 
 
-class quickplace_selection_single_follower(object):
+class quickplace_selection_single_follower():
     """Place the last selected object at the center of the other objects."""
     def __init__(self):
         self.icon='quickplaceSingle'
