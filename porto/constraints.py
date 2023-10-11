@@ -1,14 +1,12 @@
 """Collection of functions that handle constraints."""
 
 from maya import cmds
+from maya.api import OpenMaya # API 2.0
 
 from data import nomenclature
 import mayaUtils
 import naming
 import utils
-
-
-# TODO function to remove/clean an offset parent matrix connection
 
 
 def apply_and_delete_orient_constraint(masters, follower):
@@ -61,6 +59,55 @@ def blended_prebound_matrix_constraint(follower, followerRef, masters,
         groupBasename='PreBoundMtxCns', channels=['translate', 'rotate']):
     # TODO
     pass
+    return
+
+
+def clean_offset_parent_matrix(node):
+    """Remove incoming connections and clean the offsetParentMatrix attribute of
+    a given node."""
+    # Generate MPlug (attribute class)
+    MSelection = OpenMaya.MSelectionList().add(node) # Generate mObject from str
+
+    node_obj = MSelection.getDependNode(0) # Get mObject
+    node_fn = OpenMaya.MFnDependencyNode(node_obj) # Generate MFnDepNode
+
+    wantNetworkedElement=False
+    offsetParentMatrix=node_fn.findPlug("offsetParentMatrix",
+                                        wantNetworkedElement)
+
+    # List incoming connections
+    asDest=True
+    asSrc=False
+    node_incomingConnections = offsetParentMatrix.connectedTo(asDest, asSrc)
+
+    if not node_incomingConnections:
+        # No incoming connection. Clean and return.
+        mayaUtils.reset_matrix_attribute(offsetParentMatrix.name())
+        return
+
+    # Break and clean connection
+    mayaUtils.break_incoming_connection(offsetParentMatrix.name())
+    mayaUtils.reset_matrix_attribute(offsetParentMatrix.name())
+
+    # Check if the source must be cleaned
+    source_plug = node_incomingConnections[0]
+
+    # List source connections
+    asDest=False
+    asSrc=True
+    if source_plug.connectedTo(asDest, asSrc):
+        # Source is still being used. Skip.
+        return
+    
+    # Source is not being used anymore. Is it a DAG node?
+    source_obj = source_plug.node()
+    source = OpenMaya.MFnDependencyNode(source_obj).name()
+
+    if 'dagNode' in cmds.nodeType(source, inherited=True):
+        # Source is a dag node. Do not touch it.
+        return
+    
+    cmds.delete(source)
     return
 
 

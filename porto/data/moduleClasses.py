@@ -217,26 +217,19 @@ class PortoModule(object):
         data to erase any trace of a previous parent.
         
         Create the main rigging group if it does not exist already.
-        Reset the 'parent' attribute of the module (in the Maya scene) and
-        cleans any incoming connections from a previous parent.
         """
         rootGroupName = self.get_root_group_name()
 
-        # Parent to the main rigging group
+        # Make sure rig group exists
         portoScene.create_rig_modules_group()
+
+        # Parent and clean offsetParentMatrix attribute
         mayaUtils.parent(child = self.get_root_group_name(),
                          parent = portoPreferences.riggingModulesGroupName)
-
-        # Remove any incoming offsetParentMatrix and reset values
-        # TODO REFACTOR "CLEAN OFFSET PARENT MATRIX"
-        offsetParentMatrix = '{rootGroupName}.offsetParentMatrix'.format(
-            rootGroupName=rootGroupName)
-        mayaUtils.break_incoming_connection(offsetParentMatrix)
-        mayaUtils.reset_matrix_attribute(offsetParentMatrix)
-
+        constraints.clean_offset_parent_matrix(rootGroupName)
         return
 
-    def publish_module(self):
+    def publish_module(self):# TODO
         """Publish the module.
         
         Delete placementGroup.
@@ -247,6 +240,7 @@ class PortoModule(object):
         # TODO
 
         # Parent to the parent module
+        # Remove offset parent matrix constraint
         if self.parentModule==None:
             self.parent_module_to_rig_root()
         else:
@@ -264,26 +258,22 @@ class PortoModule(object):
         attribute of the parent's root group."""
         messages=["# PortoModule class, set_parent_module_attribute() method - "]
 
-        # Build names
         connectTo = '{rootGroupName}.parentModule'.format(
             rootGroupName=self.get_root_group_name())
         
-        connectFrom = ''
         if self.parentModule==None:
-            # No parent module specified: connect to rig.
-            nodeToConnectFrom = portoPreferences.riggingModulesGroupName
+            # No parent module specified: no connection.
+            mayaUtils.break_incoming_connection(connectTo)
         elif not self.parentModule.exists():
-            # Parent module is specified but does not exist: connect to rig.
-            messages.append("parent does not exist yet. Connecting to rig group.")
+            # Parent module is specified but does not exist: no connection.
+            messages.append("parent does not exist yet. Skipping connection.")
             cmds.warning(''.join(messages))
-            nodeToConnectFrom = portoPreferences.riggingModulesGroupName
+            mayaUtils.break_incoming_connection(connectTo)
         else:
-            # Connect to parent module.
-            nodeToConnectFrom = self.parentModule.get_root_group_name()
-        connectFrom ='{nodeToConnectFrom}.message'.format(nodeToConnectFrom=nodeToConnectFrom)
-        
-        # Connect
-        cmds.connectAttr(connectFrom, connectTo, f=True)
+            # Connect to parent module
+            connectFrom ='{parentModuleRootGroup}.message'.format(
+                parentModuleRootGroup=self.parentModule.get_root_group_name())
+            cmds.connectAttr(connectFrom, connectTo, f=True)
         return
         
     def set_module_type_attribute(self):

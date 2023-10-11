@@ -528,11 +528,9 @@ def reset_matrix_attribute(attributeFullpath, order=4):
             - order: int > 1, default = 4.
                 Amount of rows and lines in the matrix.
     """
-    # Get an identity matrix of the given order
-    identityMatrix = utils.create_identity_matrix(order)
-
-    # Reset attribute
-    cmds.setAttr(attributeFullpath, identityMatrix, type='matrix')
+    cmds.setAttr(attributeFullpath,
+                 utils.create_identity_matrix(order),
+                 type='matrix')
     return
 
 
