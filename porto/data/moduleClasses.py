@@ -13,6 +13,7 @@ from data import nomenclature
 from data import portoPreferences
 import constraints
 import mayaUtils
+import naming
 import portoScene
 import utils
 
@@ -84,10 +85,19 @@ class PortoModule(object):
 
     def __repr__(self):
         """Represent the class data."""
-        msg = "{className}({attributes})".format(
-            className = self.__class__.__name__,
-            attributes = str(self.__dict__)[1:-1])
-        return msg
+        # Get all class attributes
+        attributes=self.__dict__
+
+        # Adjust representation of parentModule
+        if self.parentModule:
+            rootName = self.parentModule.get_root_group_name()
+            attributes['parentModule'] = naming.remove_suffix(rootName)
+
+        # Build repr
+        repr="{className}({attributes})".format(
+                className = self.__class__.__name__,
+                attributes = attributes)
+        return repr
     
     def build_module(self):
         """Build the module's root hierarchy.
@@ -133,6 +143,9 @@ class PortoModule(object):
                               nodeType = 'transform')
         mayaUtils.parent(child = placementGroupName,
                          parent = self.get_root_group_name())
+        
+        inheritsTransform='{placementGroupName}.inheritsTransform'.format(placementGroupName=placementGroupName)
+        cmds.setAttr(inheritsTransform, 0)
         return
     
     def create_root_group(self):
@@ -157,11 +170,18 @@ class PortoModule(object):
             raise TypeError(msg)
         return existence
     
-    def get_root_group_name(self):
-        """Return the name of the module's root group."""
-        return "{side}_{name}_grp".format(side=self.side, name=self.name)
-
-    def get_parenting_output(self):
+    def get_parent_module_attr_input(self):
+        """Return the name of the node that the parentModule attribute is
+        currently connected to."""
+        parentModule = '{rootGroupName}.parentModule'.format(
+            rootGroupName=self.get_root_group_name())
+        connections=cmds.listConnections(parentModule,
+                                         destination=True)
+        if not connections:
+            return None
+        return connections[0]
+    
+    def get_parenting_attr_output(self):
         """Return the name of the node that the parentingOutput attribute is
         currently connected to."""
         parentingOutput = '{rootGroupName}.parentingOutput'.format(
@@ -176,6 +196,10 @@ class PortoModule(object):
         """Return the name of the module's placement group."""
         return "{side}_{name}_placement_grp".format(side=self.side, name=self.name)
     
+    def get_root_group_name(self):
+        """Return the name of the module's root group."""
+        return "{side}_{name}_grp".format(side=self.side, name=self.name)
+
     def parent_module(self):
         """Parent the module to its specified parent"""
         messages = ["# PortoModule class, parent_module() method - "]

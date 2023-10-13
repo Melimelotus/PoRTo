@@ -1,5 +1,7 @@
 """Collection of classes and functions that handle PoRTo modules."""
 
+import inspect
+
 from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
@@ -9,6 +11,59 @@ from data import portoPreferences
 import mayaUtils
 import naming
 import utils
+
+
+def build_porto_module_from_root_name(rootGroupName):
+    """Build a PortoModule object from the name of a root group."""
+    messages = "# build_porto_module_from_root_name() - "
+
+    # Get module type and check value
+    moduleType = cmds.getAttr('{rootGroupName}.moduleType'.format(rootGroupName=rootGroupName))
+
+    if not moduleType in get_list_of_porto_modules():
+        messages.append("unrecognized PortoModule type: {moduleType}".format(moduleType=moduleType))
+        raise ValueError(''.join(messages))
+    
+    # Build PortoModule
+    decompose=naming.decompose_porto_name(rootGroupName)
+    result = moduleClasses.PortoModule(side=decompose['side'],
+                                       name=decompose['name'])
+    
+    # Get parentingOutput
+    result.parentingOutput = result.get_parenting_attr_output()
+
+    # Get parentModule
+    parentModuleStr = result.get_parent_module_attr_input()
+    if parentModuleStr:
+        decomposeParent = naming.decompose_porto_name(parentModuleStr)
+        parentModule = moduleClasses.PortoModule(side=decomposeParent['side'],
+                                                 name=decomposeParent['name'])
+        result.parentModule=parentModule
+    else:
+        result.parentModule=None
+
+    return result
+
+
+def build_specific_module_from_root_name(rootGroupName):
+    """Build a specific PortoModule object from the name of a root group. Return
+    the class that matches the module type of the object."""
+    messages = "# build_porto_module_from_root_name() - "
+    supportedModules = ['PortoModule', 'EmptyModule',]
+
+    # Get module type
+    moduleType = cmds.getAttr('{rootGroupName}.moduleType'.format(rootGroupName=rootGroupName))
+
+    # Check
+    if not moduleType in get_list_of_porto_modules():
+        messages.append("unrecognized PortoModule type: {moduleType}".format(moduleType=moduleType))
+        raise ValueError(''.join(messages))
+
+    if not moduleType in supportedModules:
+        messages.append("cannot extract data from {moduleType} yet. TODO!".format(moduleType=moduleType))
+        raise Exception(''.join(messages))
+    # TODO
+    return
 
 
 def create_empty(side, name, parentModule=None):
@@ -70,6 +125,13 @@ def decompose_placement(placement):
     return decompose
 
 
+def get_list_of_porto_modules():
+    """Return a list holding the names of all available PortoModules."""
+    portoModulesList = [name for name, obj in inspect.getmembers(moduleClasses)
+                        if inspect.isclass(obj)]
+    return portoModulesList
+
+
 def get_root_modules():
     """Get all modules parented under rig group.
     
@@ -96,7 +158,6 @@ def get_root_modules():
     
     for i in range(0, childCount):
         children.add(rig_dagPath.child(i))
-    print(children)
 
     # Check each children: are they modules?
     '''Two checks: nomenclature and existence of portoModule attribute'''
@@ -140,7 +201,7 @@ def parent_modules(childModule, parentModule):
             - childModule: PortoModule
             - parentModule: PortoModule
     """
-    
+    # TODO
     return
 
 #

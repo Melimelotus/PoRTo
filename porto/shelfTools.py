@@ -8,6 +8,7 @@ from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
 from data import moduleClasses
+from data import portoPreferences
 import constraints
 import mayaUtils
 import naming
@@ -34,7 +35,7 @@ class connect_offset_parent_matrix():
     """Use the first selected object to drive the offset parent matrix of all
     the other selected objects."""
     def __init__(self):
-        self.icon='' # TODO
+        self.icon='offsetParentMatrix'
         self.tooltip=["Connect offset parent matrix\n",
             "The first selected object acts as parent."]
 
@@ -139,7 +140,7 @@ class create_empty_module(): # TODO WIP
                                             name=decomposedParent['name'],
                                             side=decomposedParent['side'])
                         if parentModule.exists():
-                            parentModule.parentingOutput=parentModule.get_parenting_output()
+                            parentModule.parentingOutput=parentModule.get_parenting_attr_output()
                             
                         moduleData['parentModule'] = parentModule
                         empty=portoModules.create_empty(
@@ -304,11 +305,11 @@ class increment_save():
 
 
 class parent_selected_modules():
-    """Parent the two selected modules together."""
+    """Parent selected modules to the last selected module."""
     def __init__(self):
-        self.icon=''
-        self.tooltip=["Name\n",
-            "Useful information"]
+        self.icon='' #TODO
+        self.tooltip=["Parent selected modules\n",
+            "Parent selected modules to the last selected module."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -316,47 +317,60 @@ class parent_selected_modules():
 
         # Get selection
         MSelection = OpenMaya.MGlobal.getActiveSelectionList()
-        if not MSelection.length() == 2:
+        count = MSelection.length()
+        maxIndex = count - 1
+        if count < 2:
             messages.append("not enough objects selected")
             raise Exception(''.join(messages))
-        
-        # TODO: IF PARENT IS RIG GROUP, PARENT TO ROOT
 
-        # Unpack
-        child_obj = MSelection.getDependNode(0)
-        child_mFnDepNode = OpenMaya.MFnDependencyNode(child_obj)
-        child_name = child_mFnDepNode.name()
-
-        parent_obj = MSelection.getDependNode(1)
+        # Build parent
+        parent_obj = MSelection.getDependNode(maxIndex)
         parent_mFnDepNode = OpenMaya.MFnDependencyNode(parent_obj)
         parent_name = parent_mFnDepNode.name()
 
-        # Checks
-        for node in [child_name, parent_name]:
-            if not naming.respects_porto_nomenclature(node):
+        parent_is_rig_group = (parent_name == portoPreferences.riggingModulesGroupName)
+        parentModule = None
+
+        if not parent_is_rig_group:
+            # Check parent
+            if not naming.respects_porto_nomenclature(parent_name):
                 # Not dealing with a PoRTo node.
-                messages.append("one of the selected objects is not the root group of a PortoModule.")
+                messages.append("{parent} is not the root group of a PortoModule.".format(parent=parent_name))
                 raise Exception(''.join(messages))
-            if not naming.get_suffix(node) == 'grp':
+        
+            if not naming.get_suffix(parent_name) == 'grp':
                 # Not dealing with a root group.
-                messages.append("one of the selected objects is not the root group of a PortoModule.")
+                messages.append("{parent} is not the root group of a PortoModule.".format(parent=parent_name))
+                raise Exception(''.join(messages))
+            
+            # Build PortoModule for parent
+            parentModule = portoModules.build_porto_module_from_root_name(parent_name)
+
+        # Iterate through MSelection and act on each child
+        for index in range(0, maxIndex):
+            # Build child
+            child_obj = MSelection.getDependNode(index)
+            child_mFnDepNode = OpenMaya.MFnDependencyNode(child_obj)
+            child_name = child_mFnDepNode.name()
+
+            # Check child
+            if not naming.respects_porto_nomenclature(child_name):
+                # Not dealing with a PoRTo node.
+                messages.append("{child_name} is not the root group of a PortoModule. Skipped.".format(child_name=child_name))
+                raise Exception(''.join(messages))
+            
+            if not naming.get_suffix(child_name) == 'grp':
+                # Not dealing with a root group.
+                messages.append("{child_name} is not the root group of a PortoModule. Skipped.".format(child_name=child_name))
                 raise Exception(''.join(messages))
 
-        # TODO refactor: build portoModule from node name?
-        # Build PortoModule objects
-        decompose = naming.decompose_porto_name(child_name)
-        child = moduleClasses.PortoModule(side=decompose['side'],
-                                          name=decompose['name'])
+            # Build childModule and parent
+            childModule = portoModules.build_porto_module_from_root_name(child_name)
 
-        decompose = naming.decompose_porto_name(parent_name)
-        parent = moduleClasses.PortoModule(side=decompose['side'],
-                                           name=decompose['name'])
-        parent.parentingOutput = parent.get_parenting_output()
-
-        # Parent modules
-        child.parentModule = parent
-        child.set_parent_module_attribute()
-        child.parent_module()
+            childModule.parentModule = parentModule
+            childModule.set_parent_module_attribute()
+            childModule.parent_module()
+            # End children iteration
         return
 
     #
