@@ -14,6 +14,7 @@ import mayaUtils
 import naming
 import portoModules
 import portoScene
+import portoUtils
 
 
 '''
@@ -81,16 +82,15 @@ class create_empty_module(): # TODO WIP
             moduleData = {'side': 'u',
                           'name': 'default',
                           'parentModule': None}
-            # TODO
+            # TODO : PROMPT FOR DATA
             cmds.warning('create Empty module, no selection: TODO')
-            # prompt for data, create empty module
-            portoModules.create_empty(name=moduleData['name'],
-                                      side=moduleData['side'],
-                                      parentModule=moduleData['parentModule'])
-            empty=portoModules.create_empty(
-                    name=moduleData['name'],
-                    side=moduleData['side'],
-                    parentModule=moduleData['parentModule'])
+            # Create Empty module
+            empty=moduleClasses.EmptyModule(side=moduleData['side'],
+                                            name=moduleData['name'],
+                                            parentModule=moduleData['parentModule'])
+            
+            if not empty.exists(): empty.build_module()
+            else: empty.create_placement_group()
             return
 
         locReparenting = {}
@@ -100,7 +100,7 @@ class create_empty_module(): # TODO WIP
             # Create EmptyModule object
             decompose=naming.decompose_porto_name(loc)
             empty=moduleClasses.EmptyModule(side=decompose['side'],
-                                              name=decompose['name'])
+                                            name=decompose['name'])
             locReparenting[loc]=empty.get_placement_group_name()
 
             # Get locator's parent
@@ -108,7 +108,7 @@ class create_empty_module(): # TODO WIP
             if parent: parent=parent[0]
 
             # Study parent
-            if portoModules.is_placement_loc(parent):
+            if portoUtils.is_placement_loc(parent):
                 # Locator is parented under another placement locator
                 decomposeParent=naming.decompose_porto_name(parent)
                 sameName=(decomposeParent['name'] == decompose['name'])
@@ -190,7 +190,6 @@ class create_loc_from_selection():
             return
         
         name=naming.replace_illegal_characters(name)
-        print(name)
         if naming.has_illegal_characters(name):
             # String still holds illegal characters. Warn user and empty string.
             messages.append("name holds illegal characters. Switching to default name.")
@@ -199,7 +198,6 @@ class create_loc_from_selection():
 
         # Create and place
         if not name:
-            print('no name')
             # Let maya handle the naming
             name = cmds.spaceLocator()[0]
         else:

@@ -10,6 +10,7 @@ from data import nomenclature
 from data import portoPreferences
 import mayaUtils
 import naming
+import portoUtils
 import utils
 
 
@@ -19,7 +20,7 @@ def build_porto_module_from_root_name(rootGroupName):
     decompose=naming.decompose_porto_name(rootGroupName)
     result = moduleClasses.PortoModule(side=decompose['side'],
                                        name=decompose['name'])
-    # Get parentingOutput
+    # Get attributes
     result.parentingOutput = result.get_parenting_attr_output()
     result.parentModule = result.get_parent_module_attr_input()
     return result
@@ -27,24 +28,11 @@ def build_porto_module_from_root_name(rootGroupName):
 
 def build_empty_module_from_root_name(rootGroupName):
     """Build an EmptyModule object from the name of a root group."""
-    # Build EmptyModule
-    decompose=naming.decompose_porto_name(rootGroupName)
-    result = moduleClasses.EmptyModule(side=decompose['side'],
-                                       name=decompose['name'])
-    
-    # Get parentingOutput
-    result.parentingOutput = result.get_parenting_attr_output()
-
-    # Get parentModule
-    parentModuleStr = result.get_parent_module_attr_input()
-    if parentModuleStr:
-        decomposeParent = naming.decompose_porto_name(parentModuleStr)
-        parentModule = moduleClasses.PortoModule(side=decomposeParent['side'],
-                                                 name=decomposeParent['name'])
-        result.parentModule=parentModule
-    else:
-        result.parentModule=None
-
+    portoModule = build_porto_module_from_root_name(rootGroupName)
+    result = moduleClasses.EmptyModule(side=portoModule.side,
+                                       name=portoModule.name,
+                                       parentingOutput=portoModule.parentingOutput,
+                                       parentModule=portoModule.parentModule)
     return result
 
 
@@ -72,65 +60,6 @@ def build_specific_module_from_root_name(rootGroupName):
     return
 
 
-def create_empty(side, name, parentModule=None):
-    """Create an empty module ands its placement group.
-    
-    Skip creation if the module or the placement group exist already.
-    Return an EmptyModule."""
-    empty=moduleClasses.EmptyModule(name=name,
-                                    side=side,
-                                    parentModule=parentModule)
-    if not empty.exists():
-        empty.build_module()
-    elif not mayaUtils.node_exists(empty.get_placement_group_name(), 'transform'):
-        empty.create_placement_group()
-    return empty
-
-
-def decompose_placement(placement):
-    """Decompose the data of a placement locator into a dictionary, fit for
-    creating a PortoModule.
-    
-        Return:
-            - {'side': str,
-               'name': str,
-               'parent': None or PortoModule}
-    """
-    # Decompose name
-    if naming.respects_porto_nomenclature(placement):
-        decompose = naming.decompose_porto_name(placement)
-    elif naming.has_suffix(placement):
-        decompose = {'name': naming.remove_suffix(placement),
-                     'side': 'u'}
-    else:
-        decompose = {'name': placement,
-                     'side': 'u'}
-    
-    # Get parent
-    decompose['parent'] = None
-    parent = cmds.listRelatives(placement, parent=True)
-
-    if not parent: 
-        return decompose
-
-    # Placement has a parent. Check it.
-    parent = parent[0]
-    if naming.respects_porto_nomenclature(parent) and is_placement_loc(parent):
-        decomposedParent = naming.decompose_porto_name(parent)
-
-        sameName = decomposedParent['name'] == decompose['name']
-        sameSide = decomposedParent['side'] == decompose['side']
-
-        if sameName and sameSide:
-            # Parent belongs to the same chain as the placement. Ignore.
-            return decompose
-        else:
-            decompose['parent'] = moduleClasses.PortoModule(
-                                    name=decomposedParent['name'],
-                                    side=decomposedParent['side'])
-    return decompose
-
-
 def get_list_of_porto_modules():
     """Return a list holding the names of all available PortoModules."""
     portoModulesList = [name for name, obj in inspect.getmembers(moduleClasses)
@@ -144,7 +73,7 @@ def get_selected_placement_locators():
     locs = []
     if selection:
         locs = [selected for selected in selection
-                if is_placement_loc(selected)]
+                if portoUtils.is_placement_loc(selected)]
     return locs
 
 
@@ -193,27 +122,6 @@ def get_root_modules():
 
         rootModules.append(child_name)
     return rootModules
-
-
-def is_placement_loc(obj):
-    """Predicate. Return True if the object is a placement locator."""
-    # Checks
-    if not isinstance(obj, (str, unicode)):
-        return False
-    if obj == '':
-        return False
-    
-    # Must be a locator
-    if not mayaUtils.get_node_type(obj) == 'locator':
-        return False
-    
-    # Must respect PoRTo nomenclature
-    if not naming.respects_porto_nomenclature(obj):
-        return False
-    
-    # Must end with _{placementSuffix}
-    placementSuffix = utils.get_dic_keys_from_value('placement', nomenclature.suffixes_dagNodePurposes)[0]
-    return obj.endswith('_{placementSuffix}'.format(placementSuffix=placementSuffix))
 
 
 def parent_modules(childModule, parentModule):

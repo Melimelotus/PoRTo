@@ -8,6 +8,7 @@ Examples of rigging modules include: basic chain, tendon, IK/FK leg, ribbon...
 """
 
 from maya import cmds
+from maya.api import OpenMaya # API 2.0
 
 from data import nomenclature
 from data import portoPreferences
@@ -15,6 +16,7 @@ import constraints
 import mayaUtils
 import naming
 import portoScene
+import portoUtils
 import utils
 
 
@@ -170,8 +172,8 @@ class PortoModule(object):
         return existence
     
     def get_parent_module_attr_input(self):
-        """Return the module that the parentModule attribute is currently
-        connected to. Return PortoModule."""
+        """Return a PortoModule object that matches the current value of the
+        parentModule attribute on the root group."""
         parentModule = '{rootGroupName}.parentModule'.format(
             rootGroupName=self.get_root_group_name())
         connections=cmds.listConnections(parentModule,
@@ -182,6 +184,7 @@ class PortoModule(object):
         decompose = naming.decompose_porto_name(connections[0])
         parentModule = PortoModule(side=decompose['side'],
                                    name=decompose['name'])
+        parentModule.parentingOutput=parentModule.get_parenting_attr_output()
         return parentModule
     
     def get_parenting_attr_output(self):
@@ -202,6 +205,23 @@ class PortoModule(object):
     def get_root_group_name(self):
         """Return the name of the module's root group."""
         return "{side}_{name}_grp".format(side=self.side, name=self.name)
+
+    def list_placement_locs(self):
+        """Return a list of all placement locators in the placement group."""
+        # Check if placement group exist
+        placementGrp = self.get_placement_group_name()
+        if not cmds.objExists(placementGrp):
+            return []
+        
+        # List all descendents of the placement group
+        children = cmds.listRelatives(placementGrp, allDescendents=True)
+        if not children:
+            return []
+        
+        # Filter and keep only placement locators
+        locs = [str(child) for child in children
+                if portoUtils.is_placement_loc(child)]
+        return locs
 
     def parent_module(self):
         """Parent the module to its specified parent"""
