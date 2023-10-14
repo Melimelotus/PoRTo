@@ -17,7 +17,6 @@ import naming
 import portoScene
 import utils
 
-# TODO inherit transforms: false for placement group
 
 class PortoModule(object):
     """Define a PoRTo rigging module.
@@ -48,7 +47,7 @@ class PortoModule(object):
                 the root of the rig group.
             - parentingOutput: str, default = None.
                 The node that will be used to drive children. If None, the root
-                group will be used.
+                group of the module will be used.
     """
 
     def __init__(self, name, side, parentModule=None, parentingOutput=None):
@@ -78,7 +77,7 @@ class PortoModule(object):
         # Set attrs
         self.name=name
         self.side=side
-        self.moduleType=self.__class__.__name__ #TODO TEST!!!
+        self.moduleType=self.__class__.__name__
         self.parentModule=parentModule
         self.parentingOutput=parentingOutput
         return
@@ -171,15 +170,19 @@ class PortoModule(object):
         return existence
     
     def get_parent_module_attr_input(self):
-        """Return the name of the node that the parentModule attribute is
-        currently connected to."""
+        """Return the module that the parentModule attribute is currently
+        connected to. Return PortoModule."""
         parentModule = '{rootGroupName}.parentModule'.format(
             rootGroupName=self.get_root_group_name())
         connections=cmds.listConnections(parentModule,
                                          destination=True)
         if not connections:
             return None
-        return connections[0]
+        
+        decompose = naming.decompose_porto_name(connections[0])
+        parentModule = PortoModule(side=decompose['side'],
+                                   name=decompose['name'])
+        return parentModule
     
     def get_parenting_attr_output(self):
         """Return the name of the node that the parentingOutput attribute is
@@ -266,7 +269,7 @@ class PortoModule(object):
         constraints.clean_offset_parent_matrix(rootGroupName)
         return
 
-    def publish_module(self):# TODO
+    def publish_module(self):
         """Publish the module.
         
         Delete placementGroup.
@@ -274,20 +277,21 @@ class PortoModule(object):
         directly connect the module to its parent.
         """
         # Delete placementGroup
-        # TODO
+        placementGroup = self.get_placement_group_name()
+        cmds.delete(placementGroup)
 
-        # Parent to the parent module
-        # Remove offset parent matrix constraint
+        # Update parenting: hierarchy parenting instead of offsetParentMtx
         if self.parentModule==None:
             self.parent_module_to_rig_root()
         else:
-            # Check parent existence: RAISE AN ERROR IF IT DOES NOT EXIST
-            # "publish aborted: parent does not exist in the scene."
-            # Get parent module's parentingOutput incoming connection
-            # Connect to that node
-            # Clean offsetParentMatrix connections
-            # TODO
-            pass
+            # Remove offsetParentMatrix constraint
+            constraints.clean_offset_parent_matrix(self.get_root_group_name())
+
+            # Parent
+            parentOutput = self.parentModule.get_parenting_attr_output()
+            if parentOutput: parent = parentOutput
+            else:            parent = self.parentModule.get_root_group_name()
+            mayaUtils.parent(self.get_root_group_name(), parent)
         return
     
     def set_parent_module_attribute(self):
@@ -355,7 +359,7 @@ class ChainModule(PortoModule): # TODO
                              side=side,
                              name=name,
                              parentModule=parentModule,
-                             parentingOutput=parentModule)
+                             parentingOutput=parentingOutput)
         self.chainLength = chainLength
         return
     

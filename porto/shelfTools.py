@@ -74,13 +74,7 @@ class create_empty_module(): # TODO WIP
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        # Get selection and study it
-        # TODO: refactor, function "get_selected_placement_locs"
-        selection = cmds.ls(sl=True)
-        locs = []
-        if selection:
-            locs = [selected for selected in selection
-                    if portoModules.is_placement_loc(selected)]
+        locs = portoModules.get_selected_placement_locators()
 
         if not locs:
             # Nothing usable selected. Prompt user for module data.
@@ -98,66 +92,51 @@ class create_empty_module(): # TODO WIP
                     side=moduleData['side'],
                     parentModule=moduleData['parentModule'])
             return
-        else:
-            # Placement locators selected. Build module from them.
-            '''Build list of modules to create and dictionary of reparenting.'''
-            locReparenting = {}
-            for loc in locs:
-                # Decompose name
-                decompose = naming.decompose_porto_name(loc)
-                moduleData = {'side': decompose['side'],
-                              'name': decompose['name'],
-                              'parentModule': None}
-                
-                # Study locator's parent
-                parent = cmds.listRelatives(loc, parent=True)
-                if not parent:
-                    # No parent: nothing more to do
-                    moduleData['parentModule'] = None
-                    empty=portoModules.create_empty(
-                        name=moduleData['name'],
-                        side=moduleData['side'],
-                        parentModule=moduleData['parentModule'])
-                    locReparenting[loc] = empty.get_placement_group_name()
-                    continue
-                elif portoModules.is_placement_loc(parent[0]):
-                    # Does the parent belong to the same chain?
-                    decomposedParent = naming.decompose_porto_name(parent[0])
-                    sameName = decomposedParent['name'] == decompose['name']
-                    sameSide = decomposedParent['side'] == decompose['side']
 
-                    if sameName and sameSide:
-                        # Parent belongs to the same chain as the current loc
-                        moduleData['parentModule'] = None
-                        locReparenting[loc] = parent[0]
-                        portoModules.create_empty(
-                            name=moduleData['name'],
-                            side=moduleData['side'],
-                            parentModule=moduleData['parentModule'])
-                        continue
-                    else:
-                        parentModule = moduleClasses.PortoModule(
-                                            name=decomposedParent['name'],
-                                            side=decomposedParent['side'])
-                        if parentModule.exists():
-                            parentModule.parentingOutput=parentModule.get_parenting_attr_output()
-                            
-                        moduleData['parentModule'] = parentModule
-                        empty=portoModules.create_empty(
-                            name=moduleData['name'],
-                            side=moduleData['side'],
-                            parentModule=moduleData['parentModule'])
-                        locReparenting[loc] = empty.get_placement_group_name()
-                        continue
-                empty=portoModules.create_empty(
-                        name=moduleData['name'],
-                        side=moduleData['side'],
-                        parentModule=moduleData['parentModule'])
-                locReparenting[loc] = empty.get_placement_group_name()
-                # Loop end
-            # Reparent placement locators
-            for loc, parent in locReparenting.items():
-                mayaUtils.parent(loc, parent)
+        locReparenting = {}
+
+        # Build modules and get locReparenting data
+        for loc in locs:
+            # Create EmptyModule object
+            decompose=naming.decompose_porto_name(loc)
+            empty=moduleClasses.EmptyModule(side=decompose['side'],
+                                              name=decompose['name'])
+            locReparenting[loc]=empty.get_placement_group_name()
+
+            # Get locator's parent
+            parent=cmds.listRelatives(loc, parent=True)
+            if parent: parent=parent[0]
+
+            # Study parent
+            if portoModules.is_placement_loc(parent):
+                # Locator is parented under another placement locator
+                decomposeParent=naming.decompose_porto_name(parent)
+                sameName=(decomposeParent['name'] == decompose['name'])
+                sameSide=(decomposeParent['side'] == decompose['side'])
+
+                if sameName and sameSide:
+                    # Locator and parent belong to the same chain
+                    locReparenting[loc]=parent
+                else:
+                    # Parent belongs to a different module
+                    parentModule=moduleClasses.PortoModule(
+                                    name=decomposeParent['name'],
+                                    side=decomposeParent['side'])
+                    if parentModule.exists():
+                        parentModule.parentingOutput=parentModule.get_parenting_attr_output()
+                    empty.parentModule = parentModule
+
+            # Build module
+            if empty.exists():
+                empty.create_placement_group()
+                continue
+            empty.build_module()
+            #
+        
+        # Reparent placement locators
+        for loc, parent in locReparenting.items():
+            mayaUtils.parent(loc, parent)
+        
         return
     #
 
@@ -323,15 +302,12 @@ class parent_selected_modules():
             messages.append("not enough objects selected")
             raise Exception(''.join(messages))
 
-        # Build parent
+        # Get parent name
         parent_obj = MSelection.getDependNode(maxIndex)
-        parent_mFnDepNode = OpenMaya.MFnDependencyNode(parent_obj)
-        parent_name = parent_mFnDepNode.name()
+        parent_name = OpenMaya.MFnDependencyNode(parent_obj).name()
 
-        parent_is_rig_group = (parent_name == portoPreferences.riggingModulesGroupName)
         parentModule = None
-
-        if not parent_is_rig_group:
+        if not parent_name == portoPreferences.riggingModulesGroupName:
             # Check parent
             if not naming.respects_porto_nomenclature(parent_name):
                 # Not dealing with a PoRTo node.
@@ -348,12 +324,11 @@ class parent_selected_modules():
 
         # Iterate through MSelection and act on each child
         for index in range(0, maxIndex):
-            # Build child
+            # Get child name
             child_obj = MSelection.getDependNode(index)
-            child_mFnDepNode = OpenMaya.MFnDependencyNode(child_obj)
-            child_name = child_mFnDepNode.name()
+            child_name = OpenMaya.MFnDependencyNode(child_obj).name()
 
-            # Check child
+            # Check
             if not naming.respects_porto_nomenclature(child_name):
                 # Not dealing with a PoRTo node.
                 messages.append("{child_name} is not the root group of a PortoModule. Skipped.".format(child_name=child_name))

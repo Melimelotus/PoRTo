@@ -15,18 +15,21 @@ import utils
 
 def build_porto_module_from_root_name(rootGroupName):
     """Build a PortoModule object from the name of a root group."""
-    messages = "# build_porto_module_from_root_name() - "
-
-    # Get module type and check value
-    moduleType = cmds.getAttr('{rootGroupName}.moduleType'.format(rootGroupName=rootGroupName))
-
-    if not moduleType in get_list_of_porto_modules():
-        messages.append("unrecognized PortoModule type: {moduleType}".format(moduleType=moduleType))
-        raise ValueError(''.join(messages))
-    
     # Build PortoModule
     decompose=naming.decompose_porto_name(rootGroupName)
     result = moduleClasses.PortoModule(side=decompose['side'],
+                                       name=decompose['name'])
+    # Get parentingOutput
+    result.parentingOutput = result.get_parenting_attr_output()
+    result.parentModule = result.get_parent_module_attr_input()
+    return result
+
+
+def build_empty_module_from_root_name(rootGroupName):
+    """Build an EmptyModule object from the name of a root group."""
+    # Build EmptyModule
+    decompose=naming.decompose_porto_name(rootGroupName)
+    result = moduleClasses.EmptyModule(side=decompose['side'],
                                        name=decompose['name'])
     
     # Get parentingOutput
@@ -48,7 +51,7 @@ def build_porto_module_from_root_name(rootGroupName):
 def build_specific_module_from_root_name(rootGroupName):
     """Build a specific PortoModule object from the name of a root group. Return
     the class that matches the module type of the object."""
-    messages = "# build_porto_module_from_root_name() - "
+    messages = "# build_specific_module_from_root_name() - "
     supportedModules = ['PortoModule', 'EmptyModule',]
 
     # Get module type
@@ -62,6 +65,9 @@ def build_specific_module_from_root_name(rootGroupName):
     if not moduleType in supportedModules:
         messages.append("cannot extract data from {moduleType} yet. TODO!".format(moduleType=moduleType))
         raise Exception(''.join(messages))
+    
+    behaviour = {'PortoModule': build_porto_module_from_root_name,
+                 'EmptyModule': build_empty_module_from_root_name,}
     # TODO
     return
 
@@ -132,6 +138,16 @@ def get_list_of_porto_modules():
     return portoModulesList
 
 
+def get_selected_placement_locators():
+    """Return a list holding all selected placement locators."""
+    selection = cmds.ls(sl=True)
+    locs = []
+    if selection:
+        locs = [selected for selected in selection
+                if is_placement_loc(selected)]
+    return locs
+
+
 def get_root_modules():
     """Get all modules parented under rig group.
     
@@ -181,6 +197,12 @@ def get_root_modules():
 
 def is_placement_loc(obj):
     """Predicate. Return True if the object is a placement locator."""
+    # Checks
+    if not isinstance(obj, (str, unicode)):
+        return False
+    if obj == '':
+        return False
+    
     # Must be a locator
     if not mayaUtils.get_node_type(obj) == 'locator':
         return False
