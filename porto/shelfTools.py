@@ -8,13 +8,15 @@ from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
 from data import moduleClasses
+from data import nomenclature
 from data import portoPreferences
 import constraints
 import mayaUtils
 import naming
-import portoModules
+import portoTools
 import portoScene
 import portoUtils
+import utils
 
 
 '''
@@ -75,22 +77,12 @@ class create_empty_module(): # TODO WIP
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        locs = portoModules.get_selected_placement_locators()
+        messages = ["# create_empty_module() - "]
+        locs = portoTools.get_selected_placement_locators()
 
         if not locs:
             # Nothing usable selected. Prompt user for module data.
-            moduleData = {'side': 'u',
-                          'name': 'default',
-                          'parentModule': None}
-            # TODO : PROMPT FOR DATA
-            cmds.warning('create Empty module, no selection: TODO')
-            # Create Empty module
-            empty=moduleClasses.EmptyModule(side=moduleData['side'],
-                                            name=moduleData['name'],
-                                            parentModule=moduleData['parentModule'])
-            
-            if not empty.exists(): empty.build_module()
-            else: empty.create_placement_group()
+            portoTools.prompt_create_empty_module()
             return
 
         locReparenting = {}
@@ -318,7 +310,7 @@ class parent_selected_modules():
                 raise Exception(''.join(messages))
             
             # Build PortoModule for parent
-            parentModule = portoModules.build_porto_module_from_root_name(parent_name)
+            parentModule = portoTools.build_porto_module_from_root_name(parent_name)
 
         # Iterate through MSelection and act on each child
         for index in range(0, maxIndex):
@@ -338,7 +330,7 @@ class parent_selected_modules():
                 raise Exception(''.join(messages))
 
             # Build childModule and parent
-            childModule = portoModules.build_porto_module_from_root_name(child_name)
+            childModule = portoTools.build_porto_module_from_root_name(child_name)
 
             childModule.parentModule = parentModule
             childModule.set_parent_module_attribute()
