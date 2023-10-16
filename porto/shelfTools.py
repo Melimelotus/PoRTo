@@ -7,16 +7,14 @@ None of these functions are meant to be imported anywhere else.
 from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
-from data import moduleClasses
-from data import nomenclature
 from data import portoPreferences
-import constraints
-import mayaUtils
-import naming
-import portoTools
-import portoScene
-import portoUtils
-import utils
+from lib import constraints
+from lib import mayaUtils
+from lib import portoClasses
+from lib import naming
+from lib import portoModules
+from lib import portoUtils
+import portoUI
 
 
 '''
@@ -66,7 +64,7 @@ class connect_offset_parent_matrix():
     #
 
 
-class create_empty_module(): # TODO WIP
+class create_empty_module():
     """Create an EmptyModule. If placement locators are selected, create modules
     that match their data."""
     def __init__(self):
@@ -78,11 +76,11 @@ class create_empty_module(): # TODO WIP
     @mayaUtils.undo_chunk()
     def __call__(self):
         messages = ["# create_empty_module() - "]
-        locs = portoTools.get_selected_placement_locators()
+        locs = portoModules.get_selected_placement_locators()
 
         if not locs:
             # Nothing usable selected. Prompt user for module data.
-            portoTools.prompt_create_empty_module()
+            portoUI.create_empty_module_UI()
             return
 
         locReparenting = {}
@@ -91,7 +89,7 @@ class create_empty_module(): # TODO WIP
         for loc in locs:
             # Create EmptyModule object
             decompose=naming.decompose_porto_name(loc)
-            empty=moduleClasses.EmptyModule(side=decompose['side'],
+            empty=portoClasses.EmptyModule(side=decompose['side'],
                                             name=decompose['name'])
             locReparenting[loc]=empty.get_placement_group_name()
 
@@ -111,7 +109,7 @@ class create_empty_module(): # TODO WIP
                     locReparenting[loc]=parent
                 else:
                     # Parent belongs to a different module
-                    parentModule=moduleClasses.PortoModule(
+                    parentModule=portoClasses.PortoModule(
                                     name=decomposeParent['name'],
                                     side=decomposeParent['side'])
                     if parentModule.exists():
@@ -215,7 +213,7 @@ class create_hierarchy_from_selection_order():
     def __call__(self):
         messages = ["# create_hierarchy_from_selection_order() - "]
         # Get selection
-        selectedObjects = cmds.ls(sl = True,
+        selectedObjects=cmds.ls(sl = True,
                                 dagObjects = True,
                                 objectsOnly = True,
                                 transforms = True)
@@ -225,17 +223,32 @@ class create_hierarchy_from_selection_order():
             messages.append("not enough objects in selection.")
             raise ValueError(''.join(messages))
 
+        # Get hierarchy's root parents
+        '''The script will try to respect root's parenting. If this behaviour
+        is deactivated, the hierarchy created by the script will always end up
+        at the root of the outliner, which is not always a desired outcome.'''
+        hierarchyRoot=selectedObjects[-1]
+        rootParents=mayaUtils.get_parents_list(hierarchyRoot)
+
+        # Find the first parent that is not one of the selected object
+        reparent=None
+        for parent in rootParents:
+            if not parent in selectedObjects:
+                reparent=parent
+                break
+
         # Unparent all
         for selectedObject in selectedObjects:
             mayaUtils.unparent(selectedObject)
 
         # Prepare list iteration
-        parentTo = selectedObjects[-1]
+        parentTo=hierarchyRoot
         selectedObjects.pop(-1)
 
         for selectedObject in reversed(selectedObjects):
             # Inheritance check
-            if cmds.getAttr(selectedObject+".inheritsTransform") == False:
+            inheritsTransform=cmds.getAttr('{selectedObject}.inheritsTransform'.format(selectedObject=selectedObject))
+            if not inheritsTransform:
                 # Warning: inheritsTransform of object is turned off!
                 messages.append(
                     "{selectedObject} has inheritsTransform turned off.".format(
@@ -255,7 +268,11 @@ class create_hierarchy_from_selection_order():
 
             # Parent and prepare next iteration
             cmds.parent(selectedObject, parentTo)
-            parentTo = selectedObject
+            parentTo=selectedObject
+            
+        # Reparent root
+        if reparent:
+            cmds.parent(hierarchyRoot, reparent)
         return
     #
 
@@ -269,7 +286,7 @@ class increment_save():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        portoScene.increment_save()
+        portoUtils.increment_save()
     #
 
 
@@ -310,7 +327,7 @@ class parent_selected_modules():
                 raise Exception(''.join(messages))
             
             # Build PortoModule for parent
-            parentModule = portoTools.build_porto_module_from_root_name(parent_name)
+            parentModule = portoModules.build_porto_module_from_root_name(parent_name)
 
         # Iterate through MSelection and act on each child
         for index in range(0, maxIndex):
@@ -330,7 +347,7 @@ class parent_selected_modules():
                 raise Exception(''.join(messages))
 
             # Build childModule and parent
-            childModule = portoTools.build_porto_module_from_root_name(child_name)
+            childModule = portoModules.build_porto_module_from_root_name(child_name)
 
             childModule.parentModule = parentModule
             childModule.set_parent_module_attribute()

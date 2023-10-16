@@ -1,4 +1,9 @@
-"""Contains preference data to set in Maya."""
+"""Contains preferences for Maya."""
+
+extensionsDic = {
+    'ma': 'mayaAscii',
+    'mb': 'mayaBinary',
+}
 
 # TODO custom shelf
 
