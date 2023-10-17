@@ -75,8 +75,7 @@ class create_empty_module():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        messages = ["# create_empty_module() - "]
-        locs = portoModules.get_selected_placement_locators()
+        locs = portoUtils.get_selected_placement_locators()
 
         if not locs:
             # Nothing usable selected. Prompt user for module data.

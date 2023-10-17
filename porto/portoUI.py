@@ -2,9 +2,77 @@
 
 from pymel import core
 
+from data import mayaPreferences
 from data import nomenclature
 from lib import portoClasses
 from lib import utils
+
+
+def color_changer():
+    """Interface. Change the override color attribute for the selected element."""
+    windowName = "colorChanger"
+    # Create window
+    if core.window(windowName, query=True, exists=True):
+        core.deleteUI(windowName)
+    window=core.window(windowName, title="Color Changer")
+    window.setWidth(300)
+    window.setHeight(205)
+
+    # Create UI
+    with window:
+        # Main layout
+        mainLayout=core.columnLayout(adjustableColumn=True,
+                                     rowSpacing=5,
+                                     columnOffset=['both', 2],
+                                     columnAlign='center')
+        core.separator(style='none',h=5)
+        core.text(label="Change the overrideColor attribute of selected objects.")
+        core.separator(style='none')
+        core.separator(style='in', h=2)
+
+        # Create tabs layout
+        tabs = core.tabLayout()
+
+        # First tab: color index with a grid of buttons
+        firstTab=core.columnLayout(adjustableColumn=True,
+                                   columnOffset=['both', 5],
+                                   columnAlign='center')
+        core.separator(style='none', h=10)
+        # Create grid of buttons
+        core.gridLayout(numberOfRows=4,
+                        numberOfColumns=8,
+                        cellWidthHeight=(40, 30),)
+        buttons=[]
+        for index in range(0,32):
+            # Get button colors and normalise
+            decimalColors=mayaPreferences.colorIndex[index]
+            backgroundColors=[utils.normalise_color_value(decimal)
+                              for decimal in decimalColors]
+            
+            # Create button
+            button=core.button(label=str(index),
+                               recomputeSize=True,
+                               backgroundColor=backgroundColors,)
+            buttons.append(button)
+        core.separator(style='none', h=5, parent=firstTab)
+        # Go back to tabs
+        core.setParent(tabs)
+
+        # Second tab
+        secondTab=core.columnLayout(adjustableColumn=True,
+                                    columnOffset=['both', 5],
+                                    columnAlign='center')
+        core.separator(style='none', h=10)
+        core.text("TODO")
+        core.separator(style='none', h=5)
+
+        # Edit tabs
+        core.tabLayout(tabs,
+                       edit=True,
+                       tabLabel=((firstTab, "Color index"),
+                                 (secondTab, "Custom color")))
+    window.show()
+    return
 
 
 def create_empty_module_UI():
@@ -15,7 +83,7 @@ def create_empty_module_UI():
     # Create window
     if core.window(windowName, query=True, exists=True):
         core.deleteUI(windowName)
-    window=core.window(windowName, title="Create Empty", w=300, h=185)
+    window=core.window(windowName, title="Create Empty", w=300, h=170)
     window.setWidth(300)
     window.setHeight(170)
 
