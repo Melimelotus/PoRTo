@@ -18,7 +18,7 @@ import portoUI
 
 
 '''
-class pattern(object):
+class pattern():
     """Documentation"""
     def __init__(self):
         self.icon=''
@@ -30,6 +30,18 @@ class pattern(object):
         pass
     #
 '''
+
+
+class color_changer():
+    """UI. Change the color of selected objects."""
+    def __init__(self):
+        self.icon='' # TODO
+        self.tooltip=["Color changer\n"]
+
+    @mayaUtils.undo_chunk()
+    def __call__(self):
+        portoUI.color_changer()
+    #
 
 
 class connect_offset_parent_matrix():
