@@ -8,6 +8,7 @@ from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
 from data import portoPreferences
+from lib import colorChanger
 from lib import constraints
 from lib import mayaUtils
 from lib import portoClasses
@@ -35,12 +36,14 @@ class pattern():
 class color_changer():
     """UI. Change the color of selected objects."""
     def __init__(self):
-        self.icon='' # TODO
-        self.tooltip=["Color changer\n"]
+        self.icon='colorChanger'
+        self.tooltip=["Color Changer\n",
+                      "Set a color override for selected objects."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        portoUI.color_changer()
+        colorChanger.colorChanger().assign_commands_and_show()
+        return
     #
 
 
@@ -91,7 +94,7 @@ class create_empty_module():
 
         if not locs:
             # Nothing usable selected. Prompt user for module data.
-            portoUI.create_empty_module_UI()
+            portoUI.emptyModuleCreator().assign_commands_and_show()
             return
 
         locReparenting = {}
