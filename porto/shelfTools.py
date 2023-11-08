@@ -42,7 +42,7 @@ class color_changer():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        colorChanger.colorChanger().assign_commands_and_show()
+        colorChanger.colorChanger().build_and_show()
         return
     #
 
@@ -94,7 +94,7 @@ class create_empty_module():
 
         if not locs:
             # Nothing usable selected. Prompt user for module data.
-            portoUI.emptyModuleCreator().assign_commands_and_show()
+            portoUI.emptyModuleCreator().build_and_show()
             return
 
         locReparenting = {}

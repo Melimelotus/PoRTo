@@ -26,8 +26,10 @@ class emptyModuleCreator():
             cmds.deleteUI(self.windowName)
         cmds.window(self.windowName, title="Empty Module Options")
         cmds.window(self.windowName, edit=True, width=300, height=145)
-
-        # Populate window
+        return
+    
+    def populate(self):
+        """Create the contents of the window."""
         mainLayout=cmds.columnLayout(adjustableColumn=True,
                                      rowSpacing=5,
                                      columnOffset=['both', 5])
@@ -64,14 +66,16 @@ class emptyModuleCreator():
                                          width=100)
         return
     
-    def assign_commands_and_show(self):
-        """Assign all commands to controllers and show the window."""
-        # Side controller
+    def build_and_show(self):
+        """Build the interface and show the window."""
+        # Populate
+        self.populate()
+
+        # Assign commands
         cmds.textScrollList(self.sideController,
                             edit=True,
                             selectCommand=self.get_selected_side)
         
-        # Button controllers
         cmds.button(self.addController,
                     edit=True,
                     command=self.create_module_and_close)
