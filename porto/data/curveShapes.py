@@ -1,10 +1,11 @@
-"""Point coordinates that can be used for creating specific controller shapes.
+"""Module holding data that can be used for creating specific controller shapes:
+point coordinates, shape names, categories...
 
-These coordinates are normalised and should not go beyond -1 or 1.
+The coordinates of shapes do not go beyond -1 or 1 in any axis.
 
     List of shapes:
         - arrow
-        - arrowDouble
+        - arrowBi
         - arrowTri
         - arrowQuad
         - circle8
@@ -12,7 +13,7 @@ These coordinates are normalised and should not go beyond -1 or 1.
         - circle 32
         - cube
         - curvedArrow
-        - curvedArrowDouble
+        - curvedArrowBi
         - curvedArrowTri
         - curvedArrowQuad
         - diamond
@@ -27,11 +28,43 @@ These coordinates are normalised and should not go beyond -1 or 1.
         - thinArrow
         - tube
         - verticalCurvedArrow
-        - verticalCurvedArrowDouble
+        - verticalCurvedArrowBi
 """
 
+from collections import OrderedDict
 
-def curve_coords_dic():
+
+def define_categories():
+    """Return an ordered dictionary that sorts shapes into several categories.
+
+    PoRTo holds tools for quickly creating various curve shapes. These shapes
+    are then sorted into different categories.
+    This function return a dictionary that assigns a list of shapes to each
+    category.
+    """
+    ordered=OrderedDict()
+
+    ordered['flat']=[
+        'circle8', 'circle16', 'circle32', 'square', 'plus', 'spikedCircle',
+        'gear']
+    
+    ordered['volume']=[
+        'cube', 'diamond', 'locator', 'sphere', 'tube']
+    
+    ordered['arrows']=[
+        'arrow', 'arrowBi', 'arrowTri', 'arrowQuad', 'thinArrow']
+    
+    ordered['curvedArrows']=[
+        'curvedArrow', 'curvedArrowBi', 'curvedArrowTri', 'curvedArrowQuad',
+        'flatCurvedArrow', 'flatCurvedArrowBi']
+    
+    ordered['pins']=[
+        'pinSquare', 'pinSphere']
+
+    return ordered
+
+
+def define_curve_coords():
     """Return a dictionary that holds shape names and coords."""
     coordsDic = {
         'arrow' : [
@@ -39,7 +72,7 @@ def curve_coords_dic():
             (-0.1, 0.0, 0.0), (0.1, 0.0, 0.0), (0.1, 0.625, -0.0),
             (0.25, 0.625, -0.0), (0.0, 1.0, 0.0)
             ],
-        'arrowDouble' : [
+        'arrowBi' : [
             (0.0, -1.0, -0.0), (-0.25, -0.625, 0.0), (-0.1, -0.625, 0.0),
             (-0.1, 0.625, -0.0), (-0.25, 0.625, -0.0), (0.0, 1.0, 0.0),
             (0.25, 0.625, -0.0), (0.1, 0.625, -0.0), (0.1, -0.625, 0.0),
@@ -108,7 +141,7 @@ def curve_coords_dic():
             (-0.12, -0.297, -0.621), (-0.12, 0.0, -0.66), (-0.12, 0.297, -0.621),
             (-0.12, 0.573, -0.507), (-0.12, 0.81, -0.325)
             ],
-        'curvedArrowDouble' : [
+        'curvedArrowBi' : [
             (-0.12, -0.81, -0.325), (-0.25, -0.813, -0.325), (0.0, -1.0, -0.0),
             (0.25, -0.813, -0.325), (0.12, -0.81, -0.325), (0.12, -0.573, -0.507),
             (0.12, -0.297, -0.621), (0.12, 0.0, -0.66), (0.12, 0.297, -0.621),
@@ -248,7 +281,7 @@ def curve_coords_dic():
             (0.0, -0.29, -0.648), (0.0, 0.0, -0.686), (0.0, 0.29, -0.648),
             (0.0, 0.561, -0.535), (0.0, 0.794, -0.357)
             ],
-        'verticalCurvedArrowDouble' : [
+        'verticalCurvedArrowBi' : [
             (0.0, 0.794, -0.357), (0.0, 0.906, -0.47), (0.0, 1.0, -0.0),
             (0.0, 0.53, -0.094), (0.0, 0.644, -0.206), (0.0, 0.454, -0.351),
             (0.0, 0.235, -0.443), (0.0, 0.0, -0.473), (0.0, -0.235, -0.443),
@@ -259,5 +292,37 @@ def curve_coords_dic():
             ],
     }
     return coordsDic
+
+
+def list_categories():
+    """Return an ordered list holding the names of all categories defined by
+    PoRTo.
+    
+    PoRTo holds tools for quickly creating various curve shapes. These shapes
+    are then sorted into different categories.
+    This function return a list of those categories.
+    """
+    return [key for key in define_categories()]
+
+
+def list_shapes():
+    """Return a list holding the names of all curve shapes available for
+    creation. List is in alphabetical order."""
+    return [key for key in sorted(define_curve_coords().keys())]
+
+
+def list_shapes_in_categories():
+    """Return an ordered list of all shapes sorted into categories.
+    
+    PoRTo holds tools for quickly creating various curve shapes. These shapes
+    are then sorted into different categories.
+    This function return a list of those shapes.
+    """
+    categoriesDic=define_categories()
+    shapes=[]
+    for key in categoriesDic:
+        shapes += categoriesDic[key]
+    return shapes
+
 
 #
