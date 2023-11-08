@@ -40,10 +40,11 @@ colorIndex = {
     31:[161,48,106],
 }
 
-# TODO custom shelf
+'''User preferences for Maya. Separate package?'''
+# TODO generate custom shelf
 
-# TODO attribute precision: 7
+# TODO preference: attributePrecision=7
 
-# TODO shortcuts: copy/paste deactivated
+# TODO shortcuts: copy/paste deactivated. copyPasteShortcut=False
 
-# TODO node editor: display all (?) setting
+# TODO node editor: showAuxiliaryNodes=True

@@ -34,6 +34,15 @@ The coordinates of shapes do not go beyond -1 or 1 in any axis.
 from collections import OrderedDict
 
 
+# TODO - can it be refactored so that curve shapes names are no longer hard coded
+# in two separate functions? (define_categories & define_curve_coords)
+
+# TODO if not - func that compares shapes named in each functions.
+# Raise an error if the function do not define exactly the same shapes.
+'''First test: list len
+Second test: check each item individually'''
+
+
 def define_categories():
     """Return an ordered dictionary that sorts shapes into several categories.
 
@@ -41,7 +50,11 @@ def define_categories():
     are then sorted into different categories.
     This function return a dictionary that assigns a list of shapes to each
     category.
+
+        >>>> {category: [shape names]}
     """
+    # Order matters: interface curveShapeChanger has tabs that are created by
+    # following the dictionary's order.
     ordered=OrderedDict()
 
     ordered['flat']=[
@@ -66,6 +79,10 @@ def define_categories():
 
 def define_curve_coords():
     """Return a dictionary that holds shape names and coords."""
+    # Each shape has its own icon. The icon should have the exact same name as
+    # the shape.
+    # Icons are NOT generated automatically! Therefore, any name change here
+    # should be immediately reflected in the icons.
     coordsDic = {
         'arrow' : [
             (0.0, 1.0, 0.0), (-0.25, 0.625, -0.0), (-0.1, 0.625, -0.0),

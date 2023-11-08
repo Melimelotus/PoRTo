@@ -9,6 +9,11 @@ Holds dictionaries of suffixes: suffixes_nonDagNodeTypes, suffixes_dagNodeTypes,
 suffixes_dagNodePurposes.
 """
 
+# TODO: instead of declaring global variables, store data in class (mimick dataclass from 3.7?)
+# PRO: reduces risk of changing them by accident, if the global has been
+# assigned to a variable and then operated on (happened)
+# CON: longer to invoke. nomenclature.classname.maxNameLength
+
 # -------- GLOBALS -------------------------------------------------------------
 maxNameLength=100
 maxUnderscores=4
@@ -19,6 +24,7 @@ sides={'l': 'left',
        'u': 'unsided'}
 
 # -------- REGULAR EXPRESSIONS -------------------------------------------------
+# TODO: put in functions, for a direct access to each regex' documentation
 """Several regex to look for different patterns.
 
     - allowedCharsRegex: checks if the string has any character that is not a
