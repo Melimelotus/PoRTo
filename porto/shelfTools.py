@@ -22,8 +22,9 @@ import portoUI
 class pattern():
     """Documentation"""
     def __init__(self):
+        self.toolName="Tool Name"
         self.icon=''
-        self.tooltip=["Name\n",
+        self.tooltipItems=["Name\n",
             "Useful information"]
 
     @mayaUtils.undo_chunk()
@@ -33,12 +34,13 @@ class pattern():
 '''
 
 
-class color_changer():
+class ColorChanger():
     """UI. Change the color of selected objects."""
     def __init__(self):
+        self.toolName="Color Changer"
         self.icon='colorChanger'
-        self.tooltip=["Color Changer\n",
-                      "Set a color override for selected objects."]
+        self.tooltipItems=["Color Changer\n",
+            "Set a color override for selected objects."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -47,12 +49,13 @@ class color_changer():
     #
 
 
-class connect_offset_parent_matrix():
+class ConnectOffsetParentMatrix():
     """Use the first selected object to drive the offset parent matrix of all
     the other selected objects."""
     def __init__(self):
+        self.toolName="Connect Offset Parent Matrix"
         self.icon='offsetParentMatrix'
-        self.tooltip=["Connect offset parent matrix\n",
+        self.tooltipItems=["Connect offset parent matrix\n",
             "The first selected object acts as parent."]
 
     @mayaUtils.undo_chunk()
@@ -79,12 +82,13 @@ class connect_offset_parent_matrix():
     #
 
 
-class create_empty_module():
+class CreateEmptyModule():
     """Create an EmptyModule. If placement locators are selected, create modules
     that match their data."""
     def __init__(self):
+        self.toolName="Create Empty Module"
         self.icon='moduleEmpty'
-        self.tooltip=["Create empty modules\n",
+        self.tooltipItems=["Create empty modules\n",
             "This function will either prompt you for information,\n",
             "or work from the currently selected placement locators."]
 
@@ -145,15 +149,16 @@ class create_empty_module():
     #
 
 
-class create_loc_from_selection():
+class SelectionToLocator():
     """Create a locator placed in the middle of the active selection. Prompt the
     user for a name.
 
     Works with transforms and components.
     """
     def __init__(self):
+        self.toolName="Selection to Locator"
         self.icon='selectionToLocator'
-        self.tooltip=["Selection to locator\n",
+        self.tooltipItems=["Selection to locator\n",
             "Create a locator on the selected objects or components."]
 
     @mayaUtils.undo_chunk()
@@ -212,15 +217,16 @@ class create_loc_from_selection():
     #
 
 
-class create_hierarchy_from_selection_order():
+class SelectionToHierarchy():
     """Parent the selected objects to each other. Follow the selection order.
     The first element will be parented to the second.
     The second element will be parented to the third.
     The third...
     """
     def __init__(self):
+        self.toolName="Selection to Hierarchy"
         self.icon='selectionToHierarchy'
-        self.tooltip=["Selection to hierarchy\n",
+        self.tooltipItems=["Selection to hierarchy\n",
             "Parent all selected objects together, by order of selection."]
 
     @mayaUtils.undo_chunk()
@@ -291,11 +297,12 @@ class create_hierarchy_from_selection_order():
     #
 
 
-class increment_save():
+class IncrementSave():
     """Increment save the current scene."""
     def __init__(self):
+        self.toolName="Increment Save"
         self.icon='incrementSave'
-        self.tooltip=["Increment save\n",
+        self.tooltipItems=["Increment save\n",
             "Save the current scene into a new, incremented, file.\n"]
 
     @mayaUtils.undo_chunk()
@@ -304,11 +311,12 @@ class increment_save():
     #
 
 
-class parent_selected_modules():
+class ParentSelectedModules():
     """Parent selected modules to the last selected module."""
     def __init__(self):
-        self.icon='' #TODO
-        self.tooltip=["Parent selected modules\n",
+        self.toolName="Parent Selected Modules"
+        self.icon=None #TODO
+        self.tooltipItems=["Parent selected modules\n",
             "Parent selected modules to the last selected module."]
 
     @mayaUtils.undo_chunk()
@@ -372,11 +380,12 @@ class parent_selected_modules():
     #
 
 
-class reverse_selection_order():
+class ReverseSelectionOrder():
     """Reverse the selection order."""
     def __init__(self):
+        self.toolName="Reverse Selection Order"
         self.icon='reverseSelectionOrder'
-        self.tooltip="Reverse selection order"
+        self.tooltipItems=["Reverse selection order"]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -390,12 +399,13 @@ class reverse_selection_order():
     #
 
 
-class quickplace_selection_multiple_followers():
+class QuickplaceSelectionMultipleFollowers():
     """Place all the selected objects like the first one."""
     def __init__(self):
+        self.toolName="Quickplace Selection Multiple Followers"
         self.icon='quickplaceMultiple'
-        self.tooltip=["Quickplace selection multiple followers\n",
-            "Places all the selected objects like the first one."]
+        self.tooltipItems=["Quickplace selection multiple followers\n",
+            "Place all the selected objects like the first one."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
@@ -419,12 +429,13 @@ class quickplace_selection_multiple_followers():
     #
 
 
-class quickplace_selection_single_follower():
+class QuickplaceSelectionSingleFollowers():
     """Place the last selected object at the center of the other objects."""
     def __init__(self):
+        self.toolName="Quickplace Selection Single Followers"
         self.icon='quickplaceSingle'
-        self.tooltip=["Quickplace selection single follower\n",
-            "Places the last selected object at the center of the other objects."]
+        self.tooltipItems=["Quickplace selection single follower\n",
+            "Place the last selected object at the center of the other objects."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
