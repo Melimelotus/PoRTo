@@ -16,6 +16,22 @@ In order to do that:
 
 ## Formatting
 ----> Two blank lines between functions declarations.
+----> Imports should be grouped by category. One blank line between categories.
+>from functools import partial     # Python import
+>
+>from maya import cmds    # Maya import
+>import maya.utils as mutils    # Maya import
+>
+>from data import mayaPreferences    # PoRTo import
+>import mayaUtils    # PoRTo import
+>import utils    # PoRTo import
+
+## Object nomenclature
+----> Module names: camelCase
+----> Class names: PascalCase
+----> Function names: snake_case
 
 ## Strings quotation marks
-----> '' for private strings, "" for human-read strings.
+----> '' for private strings, "" for human-read strings.  
+Examples of human-read strings: function documentation; strings that will be  
+printed to the user.
