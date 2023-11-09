@@ -2,33 +2,6 @@
 point coordinates, shape names, categories...
 
 The coordinates of shapes do not go beyond -1 or 1 in any axis.
-
-    List of shapes:
-        - arrow
-        - arrowBi
-        - arrowTri
-        - arrowQuad
-        - circle8
-        - circle 16
-        - circle 32
-        - cube
-        - curvedArrow
-        - curvedArrowBi
-        - curvedArrowTri
-        - curvedArrowQuad
-        - diamond
-        - gear
-        - locator
-        - pinSphere
-        - pinSquare
-        - plus
-        - sphere
-        - spikedCircle
-        - square
-        - thinArrow
-        - tube
-        - verticalCurvedArrow
-        - verticalCurvedArrowBi
 """
 
 from collections import OrderedDict
