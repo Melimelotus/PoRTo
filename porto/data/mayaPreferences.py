@@ -1,5 +1,6 @@
 """Contains preferences for Maya."""
 
+
 extensionsDic = {
     'ma': 'mayaAscii',
     'mb': 'mayaBinary',
@@ -40,11 +41,15 @@ colorIndex = {
     31:[161,48,106],
 }
 
-'''User preferences for Maya. Separate package?'''
-# TODO generate custom shelf
+class UserPreferences():
+    """Preference parameters useful for rigging. These are meant to be applied
+    automatically when launching Maya from PoRTo."""
 
-# TODO preference: attributePrecision=7
-
-# TODO shortcuts: copy/paste deactivated. copyPasteShortcut=False
-
-# TODO node editor: showAuxiliaryNodes=True
+    def __init__(self):
+        self.attributePrecision=7
+        self.copyPasteShortcut=False
+        self.showAuxiliaryNodes=True
+        self.menuMode='riggingMenuSet'
+        return
+    #
+#
