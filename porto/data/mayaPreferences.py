@@ -41,14 +41,16 @@ colorIndex = {
     31:[161,48,106],
 }
 
-class UserPreferences():
+class RiggingPreferences():
     """Preference parameters useful for rigging. These are meant to be applied
-    automatically when launching Maya from PoRTo."""
+    automatically when launching Maya from PoRTo.
+    
+    No methods, acts as data class."""
 
     def __init__(self):
         self.attributePrecision=7
         self.copyPasteShortcut=False
-        self.showAuxiliaryNodes=True
+        self.showAuxiliaryNodes=1 # Must be int, not bool
         self.menuMode='riggingMenuSet'
         return
     #
