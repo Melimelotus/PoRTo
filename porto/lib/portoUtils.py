@@ -5,6 +5,7 @@ import re
 from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
+from data import mayaPreferences
 from data import nomenclature
 from data import portoPreferences
 import mayaUtils
@@ -243,7 +244,7 @@ def increment_save():
 
     # Save
     cmds.file(rename=incremented)
-    cmds.file(save=True, type=mayaUtils.extensionsDic[extension])
+    cmds.file(save=True, type=mayaPreferences.extensionsDic[extension])
     return
 
 
