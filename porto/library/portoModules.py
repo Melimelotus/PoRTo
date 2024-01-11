@@ -4,10 +4,10 @@ import inspect
 
 from maya import cmds
 
-import portoClasses
-import naming
-import portoModules
-import portoUtils
+from library import portoClasses
+from library import naming
+from library import portoModules
+from library import portoUtils
 
 
 def build_porto_module_from_root_name(rootGroupName):

@@ -8,13 +8,13 @@ from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
 from data import portoPreferences
-from lib import colorChanger
-from lib import constraints
-from lib import mayaUtils
-from lib import portoClasses
-from lib import naming
-from lib import portoModules
-from lib import portoUtils
+from library import colorChanger
+from library import constraints
+from library import mayaUtils
+from library import portoClasses
+from library import naming
+from library import portoModules
+from library import portoUtils
 import portoUI
 
 
@@ -429,7 +429,7 @@ class QuickplaceSelectionMultipleFollowers():
     #
 
 
-class QuickplaceSelectionSingleFollowers():
+class QuickplaceSelectionSingleFollower():
     """Place the last selected object at the center of the other objects."""
     def __init__(self):
         self.toolName="Quickplace Selection Single Followers"

@@ -6,8 +6,8 @@ from maya import cmds
 import maya.utils as mutils
 
 from data import mayaPreferences
-import mayaUtils
-import utils
+from library import mayaUtils
+from library import utils
 
 
 # TODO - figure out best practice: should interfaces be stored in their own package?

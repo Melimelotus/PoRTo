@@ -4,7 +4,7 @@ strings..."""
 import re
 
 from data import nomenclature
-import utils
+from library import utils
 
 
 def all_type_suffixes():

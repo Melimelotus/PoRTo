@@ -4,8 +4,8 @@ from maya import cmds
 
 from data import curveShapes
 from data import nomenclature
-import mayaUtils
-import naming
+from library import mayaUtils
+from library import naming
 
 
 # TODO label controllers

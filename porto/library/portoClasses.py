@@ -11,11 +11,11 @@ from maya import cmds
 
 from data import nomenclature
 from data import portoPreferences
-import constraints
-import mayaUtils
-import naming
-import portoUtils
-import utils
+from library import constraints
+from library import mayaUtils
+from library import naming
+from library import portoUtils
+from library import utils
 
 
 class PortoModule(object):

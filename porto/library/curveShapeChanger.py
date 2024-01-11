@@ -3,7 +3,7 @@
 from maya import cmds
 
 from data import curveShapes
-from lib import naming
+from library import naming
 
 
 # TODO - figure out best practice: should interfaces be stored in their own package?

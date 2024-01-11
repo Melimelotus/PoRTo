@@ -3,8 +3,8 @@
 from maya import cmds
 
 from data import nomenclature
-from lib import portoClasses
-from lib import utils
+from library import portoClasses
+from library import utils
 
 
 class emptyModuleCreator():

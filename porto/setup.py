@@ -44,10 +44,11 @@ class PortoSetup():
     def generate_shelf_tools(self):
         toolClassesDic={name:obj for name, obj in inspect.getmembers(shelfTools)
                      if inspect.isclass(obj)}
-        
+        print(toolClassesDic)
         for toolName, toolClass in toolClassesDic.items():
             icon=toolClass().icon
             tooltip=toolClass().tooltip
+            print(toolName)
             print(icon)
             print(tooltip)
         '''create porto shelf

@@ -4,9 +4,9 @@ from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
 from data import nomenclature
-import mayaUtils
-import naming
-import utils
+from library import mayaUtils
+from library import naming
+from library import utils
 
 
 def apply_and_delete_orient_constraint(masters, follower):

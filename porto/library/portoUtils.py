@@ -8,9 +8,9 @@ from maya.api import OpenMaya # API 2.0
 from data import mayaPreferences
 from data import nomenclature
 from data import portoPreferences
-import mayaUtils
-import naming
-import utils
+from library import mayaUtils
+from library import naming
+from library import utils
 
 
 def build_main_hierarchy_groups():

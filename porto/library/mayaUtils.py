@@ -8,7 +8,7 @@ import re
 from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
-import utils
+from library import utils
 
 
 # TODO, decorator & context manager: preserve_selection
