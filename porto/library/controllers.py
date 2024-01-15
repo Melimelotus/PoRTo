@@ -39,15 +39,19 @@ def create_shaped_curve(name, shape, linear=True):
             - linear: bool, default = True.
                 Changes the degree of the curve.
                 It will be either linear (default) or cubic.
+        
+        Returns:
+            - result: str.
+                Name given to the curve at creation.
     """
-    coords = curveShapes.define_curve_coords()[shape]
-    degree = {True: 1, False: 3}
+    coords=curveShapes.define_curve_coords()[shape]
+    degree={True: 1, False: 3}
 
-    cmds.curve(degree=degree[linear],
-               n=name,
-               p=coords)
-    mayaUtils.rename_shapes(name)
-    return
+    result=cmds.curve(degree=degree[linear],
+                      n=name,
+                      p=coords)
+    mayaUtils.rename_shapes(result)
+    return result
 
 
 def decompose_joint_name_and_label(jointName):

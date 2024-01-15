@@ -9,7 +9,7 @@ from maya.api import OpenMaya # API 2.0
 
 from data import portoPreferences
 from library import colorChanger
-from library import curveShapeChanger
+from library import curveShapeSelector
 from library import constraints
 from library import mayaUtils
 from library import portoClasses
@@ -50,17 +50,17 @@ class ColorChanger():
     #
 
 
-class CurveShapeChanger():
+class CurveShapeSelector():
     """UI. Change the curve shape of selected objects."""
     def __init__(self):
-        self.toolName="Curve Shape Changer"
+        self.toolName="Curve Shape Selector"
         self.icon=''
-        self.tooltipItems=["Curve Shape Changer.\n",
+        self.tooltipItems=["Curve Shape Selector.\n",
             "Set a curve shape for the selected objects."]
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        curveShapeChanger.CurveShapeChanger().build_and_show()
+        curveShapeSelector.CurveShapeSelector().build_and_show()
         return
     #
 

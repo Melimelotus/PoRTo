@@ -1,25 +1,30 @@
-"""Module holding the curveShapeChanger interface."""
+"""Module holding the curveShapeSelector interface."""
+
+from functools import partial
+import os.path
 
 from maya import cmds
 
 from data import curveShapes
+from library import controllers
 from library import naming
 
 
 # TODO - figure out best practice: should interfaces be stored in their own package?
 
 
-# TODO display shape icons
 # TODO write button commands
-class CurveShapeChanger(): # WIP
+class CurveShapeSelector(): # WIP
     """Interface. Change the curve shape under selected objects."""
 
     def __init__(self):
-        self.windowName="curveShapeChanger"
+        self.windowName="curveShapeSelector"
 
         self.shapeCategories=['all']
         for category in curveShapes.list_categories():
             self.shapeCategories.append(category)
+        
+        self.iconsPath=self.build_icons_path()
         
         # Controllers are created and assigned later
         self.degreeControllersCollection=''
@@ -34,11 +39,69 @@ class CurveShapeChanger(): # WIP
         cmds.window(self.windowName, edit=True, width=400, height=350)
         return
     
+    def build_icons_path(self):
+        """Build the path leading to the directory that holds all icons."""
+        libraryDir=os.path.dirname(__file__)
+        portoDir=os.path.dirname(libraryDir)
+        return '{portoDir}/icons/curveShapes'.format(portoDir=portoDir)
+    
+    def create_shape(self, shape, linear):
+        """Create a new shape at the root of the outliner."""
+        controllers.create_shaped_curve(name=shape,
+                                            shape=shape,
+                                            linear=linear)
+        cmds.select(clear=True)
+        return
+    
+    def apply_curve_creation_parameters(self, shape, *_):
+        """Change the shape of selected curves or create a new curve if nothing
+        is selected."""
+        linear=True #TODO : GET DEGREE
+
+        # Get and study selection
+        selectedObjects=cmds.ls(sl=True, exactType='transform')
+        validSelection=False
+
+        for selected in selectedObjects:
+            # List shapes under selected
+            childrenShapes=cmds.listRelatives(selected, shapes=True)
+            # Filter and keep only nurbsCurves
+            nurbsCurves=[childShape
+                         for childShape in childrenShapes
+                         if cmds.objectType(childShape)=='nurbsCurve']
+            
+            if not nurbsCurves:
+                continue
+
+            validSelection=True
+            # Selection holds nurbsCurves: add or replace a shape to them.
+            replaceBehaviour=False #TODO: GET BEHAVIOUR
+
+            if replaceBehaviour:
+                # TODO
+                # delete all shapes
+                # create new shape and parent to transform
+                # delete created transform
+                pass
+            else:
+                # TODO
+                # create shape
+                # parent to transform
+                # delete created transform
+                pass
+
+        if not validSelection:
+            # Invalid selection: create a new curve.
+            self.create_shape(shape, linear)
+        return
+
     def populate(self):
-        """Create the contents of the window."""
-        '''
+        """Create the contents of the window.
+
         ┌───────────────────────────────────────────────────────────────────┐
-        │Change the shape of the selected curve.                            │
+        │  ■  Curve Shape Selection                                -  □  X  │
+        ╠═══════════════════════════════════════════════════════════════════╣
+        │Change the shape of the selected curve or create a new curve.      │
         │-------------------------------------------------------------------│
         │┌─────────────────────────────────────────────────────────────────┐│
         ││ ▼ Curve Settings                                                ││
@@ -49,15 +112,14 @@ class CurveShapeChanger(): # WIP
         │   _____ ______ ________ ________ ________ ________ ______         │
         │  │ All │ Flat │ Volume │ Arrows │ Curved │ Arrows │ Pins │        │
         │──┘     └──────────────────────────────────────────────────────────│
-        │                                                                ┌─┐│
-        │  ┌───────────────────┬───────────────────┬───────────────────┐ │▲││
-        │  │                   │                   │                   │ ├─┤│
-        │  │        img        │        img        │        img        │ │▓││
+        │  ┌───────────────────┬───────────────────┬───────────────────┐ ┌─┐│
+        │  │                   │                   │                   │ │▲││
+        │  │        img        │        img        │        img        │ ├─┤│
         │  │                   │                   │                   │ │▓││
         │  └───────────────────┴───────────────────┴───────────────────┘ │▓││
         │         circle8             circle16            circle32       │▓││
         │  ┌───────────────────┬───────────────────┬───────────────────┐ │▓││
-        │  │                   │                   │                   │ │ ││
+        │  │                   │                   │                   │ │▓││
         │  │        img        │        img        │        img        │ │ ││
         │  │                   │                   │                   │ │ ││
         │  └───────────────────┴───────────────────┴───────────────────┘ │ ││
@@ -70,8 +132,7 @@ class CurveShapeChanger(): # WIP
         │         circle8             circle16            circle32       │▼││
         │                                                                └─┘│
         └───────────────────────────────────────────────────────────────────┘
-        '''
-
+        """
         mainLayout=cmds.columnLayout(adjustableColumn=True,
                                      columnOffset=['both', 2])
         cmds.separator(style='none', h=5)
@@ -80,7 +141,7 @@ class CurveShapeChanger(): # WIP
         cmds.rowLayout(numberOfColumns=2,
                        adjustableColumn=2,
                        columnAttach=([1, 'left', 0]))
-        cmds.text("Change the shape of selected curves.")
+        cmds.text("Change the shape of selected curves or create a new curve.")
         cmds.separator(style='none')
 
         cmds.setParent(mainLayout)
@@ -144,7 +205,7 @@ class CurveShapeChanger(): # WIP
             cmds.tabLayout(tabs, edit=True,
                            tabLabel=(newTab, label))
             self.categoryTabs[shapeCategory]=newTab
-        
+
         # Fill tabs
         tabShapes=curveShapes.define_categories()
         tabShapes['all']=curveShapes.list_shapes_in_categories()
@@ -159,11 +220,19 @@ class CurveShapeChanger(): # WIP
                                       columnWidth=[(1, 120), (2, 120), (3, 120)],
                                       columnAttach=[1, 'left', 0])
             
-            # Create buttons
+            # Create symbolButtons: buttons with images
             for shape in tabShapes[tabKey]:
+                # Build path towards the icon for the given shape
+                imagePath='{iconsPath}/{shape}.png'.format(
+                    iconsPath=self.iconsPath,
+                    shape=shape)
+                
+                # Build layout and controller
                 cmds.columnLayout(columnAttach=['both', 5],
                                   columnWidth=120)
-                shapeController=cmds.button(width=75, height=75, label='img')
+                shapeController=cmds.symbolButton(width=75,
+                                                  height=75,
+                                                  image=imagePath)
                 cmds.separator(style='none', h=5)
                 cmds.text(label=shape)
                 cmds.separator(style='none', h=10)
@@ -171,9 +240,6 @@ class CurveShapeChanger(): # WIP
 
                 # Update dictionary
                 self.shapeControllers[shapeController]=shape
-
-        print(self.shapeControllers)
-
         return
     
     def build_and_show(self):
@@ -181,9 +247,25 @@ class CurveShapeChanger(): # WIP
         # Populate window
         self.populate()
         # Assign commands
-        # TODO
+        for shapeController, shape in self.shapeControllers.items():
+            # TODO
+            #cmds.symbolButton(shapeController, edit=True, command='print("hello")')
+            cmds.symbolButton(shapeController, edit=True,
+                              command=partial(self.apply_curve_creation_parameters, shape))
         # Show window
         cmds.showWindow(self.windowName)
         return
     #
+
+'''
+get degree
+
+if invalid selection: create new curve at root
+library.controllers.create_shaped_curve()
+
+else:
+    get behaviour
+    replace or add new shape
+
+'''
 #
