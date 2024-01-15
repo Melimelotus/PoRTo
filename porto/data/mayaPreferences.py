@@ -50,8 +50,9 @@ class RiggingPreferences():
     def __init__(self):
         self.attributePrecision=7
         self.copyPasteShortcut=False
-        self.showAuxiliaryNodes=1 # Must be int, not bool
         self.menuMode='riggingMenuSet'
+        self.showAuxiliaryNodes=1 # Must be int, not bool
+        self.showUnitConversionNodes=True
         return
     #
 #

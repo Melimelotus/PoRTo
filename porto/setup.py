@@ -11,12 +11,10 @@ import shelfTools
 
 
 class RiggingSetup():
-    # TODO: nodeEditor, display,  nodeEdMenuOption `getCurrentNodeEditor` -showUnitConversions SUCI
-    # FALSE BY DEFAULT, SET TO TRUE
-    # for maya 2023 and above only
     def setup(self):
         """Setup the Maya environment."""
         self.set_attribute_precision()
+        self.enable_copy_paste_shortcut()
         self.set_auxiliary_nodes_visibility()
         self.set_menu_mode()
         return
@@ -51,11 +49,6 @@ class RiggingSetup():
         """Set the menu mode (Modelling, Rigging, Animation...) to match the
         value given in mayaPreferences."""
         cmds.setMenuMode(mayaPreferences.RiggingPreferences().menuMode)
-        return
-    
-    def set_unit_conversion_nodes_visiblity(self):
-        """TODO"""
-        pass
         return
     #
 
