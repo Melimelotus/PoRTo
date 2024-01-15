@@ -11,11 +11,24 @@ import shelfTools
 
 
 class RiggingSetup():
+    # TODO: nodeEditor, display,  nodeEdMenuOption `getCurrentNodeEditor` -showUnitConversions SUCI
+    # FALSE BY DEFAULT, SET TO TRUE
+    # for maya 2023 and above only
     def setup(self):
         """Setup the Maya environment."""
         self.set_attribute_precision()
         self.set_auxiliary_nodes_visibility()
         self.set_menu_mode()
+        return
+    
+    def enable_copy_paste_shortcut(self):
+        """Enable or disable the copy paste shortcut to match the status given
+        in mayaPreferences."""
+        enable=mayaPreferences.RiggingPreferences().copyPasteShortcut
+        if enable:
+            cmds.hotkey(k='v', ctl=True, name='PasteSelectedNameCommand')
+        else:
+            cmds.hotkey(k='v', ctl=True, n='')
         return
     
     def set_attribute_precision(self):
@@ -34,16 +47,15 @@ class RiggingSetup():
         mel.eval(command)
         return
     
-    def enable_copy_paste_shortcut(self): # TODO
-        """Enable or disable the copy paste shortcut to match the status given
-        in mayaPreferences."""
-        pass
-        return
-    
     def set_menu_mode(self):
         """Set the menu mode (Modelling, Rigging, Animation...) to match the
         value given in mayaPreferences."""
         cmds.setMenuMode(mayaPreferences.RiggingPreferences().menuMode)
+        return
+    
+    def set_unit_conversion_nodes_visiblity(self):
+        """TODO"""
+        pass
         return
     #
 
