@@ -16,18 +16,16 @@ class CurveShapeChanger(): # WIP
 
     def __init__(self):
         self.windowName="curveShapeChanger"
-        self.shapeCategories=["All", "Flat", "Volume", "Arrows",
-                              "Curved Arrows", "Other"]
+
+        self.shapeCategories=['all']
+        for category in curveShapes.list_categories():
+            self.shapeCategories.append(category)
         
         # Controllers are created and assigned later
         self.degreeControllersCollection=''
         self.degreeControllers=[]
         self.preserveShapesController=''
         self.shapeControllers={}
-
-        self.shapeCategories=['all']
-        for category in curveShapes.list_categories():
-            self.shapeCategories.append(category)
 
         # Create window
         if cmds.window(self.windowName, query=True, exists=True):
@@ -38,6 +36,42 @@ class CurveShapeChanger(): # WIP
     
     def populate(self):
         """Create the contents of the window."""
+        '''
+        ┌───────────────────────────────────────────────────────────────────┐
+        │Change the shape of the selected curve.                            │
+        │-------------------------------------------------------------------│
+        │┌─────────────────────────────────────────────────────────────────┐│
+        ││ ▼ Curve Settings                                                ││
+        │╠═════════════════════════════════════════════════════════════════╣│
+        ││          Curve Degree:      ● Linear ○ Cubic                    ││
+        ││             Behaviour:      □ Preserve Existing Shapes          ││
+        │└─────────────────────────────────────────────────────────────────┘│
+        │   _____ ______ ________ ________ ________ ________ ______         │
+        │  │ All │ Flat │ Volume │ Arrows │ Curved │ Arrows │ Pins │        │
+        │──┘     └──────────────────────────────────────────────────────────│
+        │                                                                ┌─┐│
+        │  ┌───────────────────┬───────────────────┬───────────────────┐ │▲││
+        │  │                   │                   │                   │ ├─┤│
+        │  │        img        │        img        │        img        │ │▓││
+        │  │                   │                   │                   │ │▓││
+        │  └───────────────────┴───────────────────┴───────────────────┘ │▓││
+        │         circle8             circle16            circle32       │▓││
+        │  ┌───────────────────┬───────────────────┬───────────────────┐ │▓││
+        │  │                   │                   │                   │ │ ││
+        │  │        img        │        img        │        img        │ │ ││
+        │  │                   │                   │                   │ │ ││
+        │  └───────────────────┴───────────────────┴───────────────────┘ │ ││
+        │         circle8             circle16            circle32       │ ││
+        │  ┌───────────────────┬───────────────────┬───────────────────┐ │ ││
+        │  │                   │                   │                   │ │ ││
+        │  │        img        │        img        │        img        │ │ ││
+        │  │                   │                   │                   │ │ ││
+        │  └───────────────────┴───────────────────┴───────────────────┘ ├─┤│
+        │         circle8             circle16            circle32       │▼││
+        │                                                                └─┘│
+        └───────────────────────────────────────────────────────────────────┘
+        '''
+
         mainLayout=cmds.columnLayout(adjustableColumn=True,
                                      columnOffset=['both', 2])
         cmds.separator(style='none', h=5)
