@@ -10,55 +10,72 @@ from data import mayaPreferences
 import shelfTools
 
 
-'''
-two interesting ways of setting maya up
-- apply setup directly in a launched scene
-- adjust preference files before launch IF there are some already
-'''
-
-class RiggingSetup(mayaPreferences.RiggingPreferences):
+class RiggingSetup():
     def setup(self):
         """Setup the Maya environment."""
-        self.set_menu_mode()
+        self.set_attribute_precision()
         self.set_auxiliary_nodes_visibility()
+        self.set_menu_mode()
         return
     
-    def set_menu_mode(self):
-        """Set the menu mode (Modelling, Rigging, Animation...) to match the
-        value given in mayaPreferences."""
-        cmds.setMenuMode(self.menuMode)
+    def set_attribute_precision(self):
+        """Set the value for the attribute precision, i.e the amount of decimals
+        to show. Match the value given in mayaPreferences"""
+        # Get main channelBox menu from Maya
+        gChannelBoxName = mel.eval('$temp=$gChannelBoxName')
+        cmds.channelBox(gChannelBoxName, edit=True,
+            precision=mayaPreferences.RiggingPreferences().attributePrecision)
         return
     
     def set_auxiliary_nodes_visibility(self):
         """Set the visibility of auxiliary nodes (Node Editor option) to match
         the value given in mayaPreferences."""
-        command='showMinorNodes {value}'.format(value=self.showAuxiliaryNodes)
+        command='showMinorNodes {value}'.format(value=mayaPreferences.RiggingPreferences().showAuxiliaryNodes)
         mel.eval(command)
+        return
+    
+    def enable_copy_paste_shortcut(self): # TODO
+        """Enable or disable the copy paste shortcut to match the status given
+        in mayaPreferences."""
+        pass
+        return
+    
+    def set_menu_mode(self):
+        """Set the menu mode (Modelling, Rigging, Animation...) to match the
+        value given in mayaPreferences."""
+        cmds.setMenuMode(mayaPreferences.RiggingPreferences().menuMode)
         return
     #
 
 
 class PortoSetup():
+    """Class holding functions dedicated to setting PoRTo up."""
+    # TODO: create shelves in order
     def __init__(self):
         self.shelfName='PoRTo'
         return
 
+    def setup(self):
+        self.create_shelf()
+        self.generate_shelf_tools()
+
     def create_shelf(self):
-        '''Create a shelf for PoRTo if it does not exist already. Set the PoRTo
-        shelf as the active shelf.'''
-        # Get shelves
-        shelvesTopLevel=mel.eval("$tmpVar=$gShelfTopLevel")
-        shelves=cmds.tabLayout(shelvesTopLevel, query=True, childArray=True)
+        """Create a shelf for PoRTo if it does not exist already. Set the PoRTo
+        shelf as the active shelf."""
+        # Get main shelves menu from maya
+        gShelfTopLevel=mel.eval("$temp=$gShelfTopLevel")
+        shelves=cmds.tabLayout(gShelfTopLevel, query=True, childArray=True)
 
         # Create PoRTo shelf if it does not exist and set as active shelf
         if not self.shelfName in shelves:
-            cmds.shelfLayout(self.shelfName, parent=shelvesTopLevel)
-        cmds.tabLayout(shelvesTopLevel, edit=True, selectTab=self.shelfName)
+            cmds.shelfLayout(self.shelfName, parent=gShelfTopLevel)
+        cmds.tabLayout(gShelfTopLevel, edit=True, selectTab=self.shelfName)
         return
     
     def generate_shelf_tools(self):
-        '''Create or update tools buttons in the PoRTo shelf.'''
-        self.create_shelf()
+        """Create or update tools buttons in the PoRTo shelf.
+        
+        The function will fail if the PoRTo shelf does not exist already."""
         # Get contents of PoRTo shelf
         shelfButtons=(cmds.shelfLayout(self.shelfName, query=True, childArray=True)
                       or [])
