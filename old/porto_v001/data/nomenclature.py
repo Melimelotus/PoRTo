@@ -84,7 +84,7 @@ camelCaseRegex="^[a-z0-9](?:[a-z]|[0-9](?![a-z])|[A-Z](?![A-Z])|[_](?=[a-z0-9]))
 charsAndNumbersRegex = "^[a-zA-Z0-9]+$"
 formatRegex="(^[lrcu])(?:_)([a-zA-Z0-9]+)(?:[_](?![_]))([a-zA-Z0-9]+(?=[_]))?(?:[_])?([a-z]{3}$)"
 fullpathToAttributeRegex="^([a-zA-Z0-9_|]+[|])?([a-zA-Z0-9_]+)[.]([a-zA-Z0-9_\[\].]+)$"
-suffixRegex="([a-zA-Z0-9_]+)(?:_)([a-z]{3}$)"
+suffixRegex="^[a-zA-Z0-9_]+_([a-z]{3}$)$"
 
 # -------- SUFFIXES ------------------------------------------------------------
 # Suffixes for non-DAG objects

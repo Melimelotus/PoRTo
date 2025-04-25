@@ -48,11 +48,11 @@ def add_group_as_parent(targetName, groupName):
     # Sets coordinates
     for axis in ['X', 'Y', 'Z']:
         for channel in ['translate', 'rotate', 'scale']:
-            groupAttr='{groupName}.{channel}{axis}'.format(
+            groupAttr = '{groupName}.{channel}{axis}'.format(
                 groupName=groupName,
                 channel=channel,
                 axis=axis)
-            targetAttr='{targetName}.{channel}{axis}'.format(
+            targetAttr = '{targetName}.{channel}{axis}'.format(
                 targetName=targetName,
                 channel=channel,
                 axis=axis)
@@ -60,8 +60,8 @@ def add_group_as_parent(targetName, groupName):
             cmds.setAttr(groupAttr, cmds.getAttr(targetAttr))
     
     # Parent
-    currentParent=cmds.listRelatives(targetName, parent=True)
-    if currentParent==None or currentParent==[]:
+    currentParent = cmds.listRelatives(targetName, parent = True)
+    if currentParent == None or currentParent == []:
         cmds.parent(targetName, groupName)
     else:
         cmds.parent(groupName, currentParent)
@@ -78,7 +78,7 @@ def break_incoming_connection(attributeFullpath):
                 Should be of the format: {nodeName}.{nodeAttr}
     """
     # Get incoming connections
-    connections=cmds.listConnections(attributeFullpath,
+    connections = cmds.listConnections(attributeFullpath,
                                        source=True,
                                        plugs=True)
     # Break
@@ -101,15 +101,15 @@ def check_node_existence(nodeName, nodeType):
                 {'exists': bool, 'sameType': bool}
     """
 
-    exists=cmds.objExists(nodeName)
+    exists = cmds.objExists(nodeName)
 
     if exists:
-        currentType=get_node_type(nodeName)
+        currentType = get_node_type(nodeName)
     else:
-        currentType=None
+        currentType = None
     
-    resultDic={'exists': exists,
-                 'sameType': currentType==nodeType}
+    resultDic = {'exists': exists,
+                 'sameType': currentType == nodeType}
     return resultDic
 
 
@@ -147,12 +147,12 @@ def create_node(nodeName, nodeType):
             - nodeName: str.
             - nodeType: str.
     """
-    existenceCheck=check_node_existence(nodeName, nodeType)
+    existenceCheck = check_node_existence(nodeName, nodeType)
 
-    if existenceCheck['exists']==True and existenceCheck['sameType']==True:
+    if existenceCheck['exists'] == True and existenceCheck['sameType'] == True:
         # Skip
         return False
-    elif existenceCheck['exists']==True and existenceCheck['sameType']==False:
+    elif existenceCheck['exists'] == True and existenceCheck['sameType'] == False:
         # Conflict!
         msg="# create_node() - conflict in scene. A node with the same name but a different type exists already."
         raise TypeError(msg)
@@ -160,9 +160,9 @@ def create_node(nodeName, nodeType):
     if nodeType in ['locator', 'spaceLocator']:
         # Locator need to be created via their dedicated function
         # Otherwise, the shape will receive the name but NOT the transform
-        cmds.spaceLocator(name=nodeName)
+        cmds.spaceLocator(name = nodeName)
     else:
-        cmds.createNode(nodeType, name=nodeName)
+        cmds.createNode(nodeType, name = nodeName)
     return True
 
 
@@ -192,12 +192,10 @@ def decompose_matrix(matrixToDecompose):
     rotate=[OpenMaya.MAngle(axis).asDegrees() for axis in eulerRotation]
 
     # Build result
-    result={
-        'translate': list(translation),
-        'rotate': rotate,
-        'scale': scale,
-        'shear': shear,
-    }
+    result={'translate': list(translation),
+            'rotate': rotate,
+            'scale': scale,
+            'shear': shear}
     return result
 
 
@@ -217,31 +215,31 @@ def flatten_components_list(listToFlatten):
         Args:
             - listToFlatten: list of str.
     """
-    flattened=[]
+    flattened = []
     # Regex: '{object}.{component}[{startIndex}:{endIndex}]'
     '''Three capture groups:
         - {object}.{component}
         - {startIndex}
         - {endIndex}
     '''
-    regex=re.compile('^([a-zA-Z|_0-9]+\.[a-z]+)\[([0-9]+)[:]([0-9]+)\]$')
+    regex = re.compile('^([a-zA-Z|_0-9]+\.[a-z]+)\[([0-9]+)[:]([0-9]+)\]$')
     
     # Check each element and flatten if necessary
     for element in listToFlatten:
-        match=regex.match(element)
+        match = regex.match(element)
 
-        if match==None:
+        if match == None:
             flattened.append(element)
             continue
 
         # Element is compacted and corresponds to multiple components. Flatten!
-        componentName=match.group(1)
-        startIndex=int(match.group(2))
-        endIndex=int(match.group(3))
+        componentName = match.group(1)
+        startIndex = int(match.group(2))
+        endIndex = int(match.group(3))
         
         # Build flat names
         for index in range(startIndex, endIndex + 1):
-            flatName='{componentName}[{index}]'.format(
+            flatName = '{componentName}[{index}]'.format(
                 componentName=componentName,
                 index=index)
             flattened.append(flatName)
@@ -274,25 +272,25 @@ def get_average_position(objList):
     # Checks
     if not isinstance(objList, list):
         raise TypeError('# get_average_position() - arg must be a list.')
-    if objList==[]:
+    if objList == []:
         return [0.0,0.0,0.0]
     
     # Flatten list ( ['obj.vtx[0:5]'] >>>> ['obj.vtx[0]', 'obj.vtx[1]', ...] )
-    flattenedList=flatten_components_list(objList)
-    amount=len(flattenedList)
+    flattenedList = flatten_components_list(objList)
+    amount = len(flattenedList)
 
     # Dictionary holding all values for each channel
-    channels=['tx', 'ty', 'tz']
-    translatesDic={channel: [] for channel in channels}
+    channels = ['tx', 'ty', 'tz']
+    translatesDic = {channel: [] for channel in channels}
 
     # Add the translate values of each object to the dictionary
     for obj in flattenedList:
-        values=cmds.xform(obj, query=True, translation=True, worldSpace=True)
+        values = cmds.xform(obj, query=True, translation=True, worldSpace=True)
         for channel, value in zip(channels, values):
             translatesDic[channel].append(value)
     
     # Calculate means: sum of all values for a given channel, divided by amount
-    means=[(sum(translatesDic[channel]) / amount)
+    means = [(sum(translatesDic[channel]) / amount)
              for channel in channels]
     return means
 
@@ -303,28 +301,28 @@ def get_center_position(objList):
     # Checks
     if not isinstance(objList, list):
         raise TypeError('# get_center_position() - arg must be a list.')
-    if objList==[]:
+    if objList == []:
         return [0.0,0.0,0.0]
     
     # Dictionary holding min and max values for each channel
-    boundsDic={}
-    channels=['tx', 'ty', 'tz']
-    flattenedList=flatten_components_list(objList)
+    boundsDic = {}
+    channels = ['tx', 'ty', 'tz']
+    flattenedList = flatten_components_list(objList)
 
     # Initialize min/max values from the first object in the list
-    values=cmds.xform(flattenedList[0],
+    values = cmds.xform(flattenedList[0],
                         query=True,
                         translation=True,
                         worldSpace=True)
 
     for value, channel in zip(values, channels):
-        boundsDic[channel]=[value, value]
+        boundsDic[channel] = [value, value]
 
     flattenedList.pop(0)
 
     # Iterate through all objects and update bounds when necessary
     for obj in flattenedList:
-        values=cmds.xform(obj,
+        values = cmds.xform(obj,
                             query=True,
                             translation=True,
                             worldSpace=True)
@@ -332,13 +330,13 @@ def get_center_position(objList):
         for value, channel in zip(values, channels):
             if value < boundsDic[channel][0]:
                 # New min!
-                boundsDic[channel][0]=value
+                boundsDic[channel][0] = value
             if value > boundsDic[channel][1]:
                 # New max!
-                boundsDic[channel][1]=value
+                boundsDic[channel][1] = value
 
-    # center coords=(channelmin + channelmax) / 2
-    centerCoords=[(boundsDic[channel][0] + boundsDic[channel][1])/2
+    # center coords = (channelmin + channelmax) / 2
+    centerCoords = [(boundsDic[channel][0] + boundsDic[channel][1])/2
                     for channel in channels]
     return centerCoords
 
@@ -352,29 +350,30 @@ def get_locked_channels(objectToCheck):
             - channels: list, default=['translate', 'rotate', 'scale']
                 List of transformation channels to check.
     """
-    axes=['x', 'y', 'z']
-    lockedChannels={}
+    axes = ['x', 'y', 'z']
+    lockedChannels = {}
 
     for channel in ['translate', 'rotate', 'scale']:
-        lockedAxes=[]
+        lockedAxes = []
         for axis in axes:
-            attribute='{objectToCheck}.{channel}{upperCaseAxis}'.format(
-                objectToCheck=objectToCheck,
-                channel=channel,
-                upperCaseAxis=axis.upper()
-            )
-            # Append axis if the attribute is locked
-            if cmds.getAttr(attribute, lock=True):
+            # Build name
+            attrToCheck = '{objectToCheck}.{channel}{upperCaseAxis}'.format(
+                objectToCheck = objectToCheck,
+                channel = channel,
+                upperCaseAxis = axis.upper())
+            
+            # Check if locked
+            if cmds.getAttr(attrToCheck, l = True):
                 lockedAxes.append(axis)
         # Add result to dictionary
-        lockedChannels[channel]=lockedAxes
+        lockedChannels[channel] = lockedAxes
     return lockedChannels
 
 
 def get_current_file():
     """Return the name and full path of the current file."""
-    file=cmds.file(query=True, sceneName=True)
-    if file=='':
+    file = cmds.file(query=True, sceneName=True)
+    if file == '':
         # Scene has not been saved yet.
         return None
     return file
@@ -382,8 +381,8 @@ def get_current_file():
 
 def get_current_filename():
     """Return the name of the current file."""
-    filename=cmds.file(query=True, sceneName=True, shortName=True)
-    if filename=='':
+    filename = cmds.file(query=True, sceneName=True, shortName=True)
+    if filename == '':
         # Scene has not been saved yet.
         return None
     return filename
@@ -397,19 +396,17 @@ def get_node_type(nodeName):
     are just transforms.
     """
 
-    nodeType=cmds.nodeType(nodeName)
+    nodeType = cmds.nodeType(nodeName)
 
     # Some nodes, such as locators or curves, are defined by their shapes.
     # This means that nodeType will return 'transform' for them.
     # We need to check their shapes.
-    if nodeType=='transform':
-        childrenShapes=cmds.listRelatives(
-            nodeName,
-            noIntermediate=True,
-            shapes=True,
-        )
-        if isinstance(childrenShapes, list) and not childrenShapes==[]:
-            nodeType=cmds.nodeType(childrenShapes[0])
+    if nodeType == 'transform':
+        childrenShapes = cmds.listRelatives(nodeName,
+                                            noIntermediate = True,
+                                            shapes = True)
+        if isinstance(childrenShapes, list) and not childrenShapes == []:
+            nodeType = cmds.nodeType(childrenShapes[0])
 
     return nodeType
 
@@ -417,27 +414,27 @@ def get_node_type(nodeName):
 def get_parents_list(nodeName):
     """Returns a list of all parents of a given node, in parenting order."""
 
-    parent=cmds.listRelatives(nodeName, parent=True)
+    parent = cmds.listRelatives(nodeName, parent=True)
 
-    if parent==None or parent==[]:
+    if parent == None or parent == []:
         return []
     
     # Build list of all parents
     # Not using listRelatives with allParents flag: does not work on 2020.4
-    parentsList=[parent[0]]
-    objectToCheck=parent[0]
+    parentsList = [parent[0]]
+    objectToCheck = parent[0]
 
-    i=0
+    i = 0
     while i < 1000:
         i += 1
-        parent=cmds.listRelatives(objectToCheck, parent=True)
-        if parent==None:
+        parent = cmds.listRelatives(objectToCheck, parent=True)
+        if parent == None:
             # Root level: no more parents above.
             break
         else:
             # Add parent to list and prepare next iteration
             parentsList.append(parent[0])
-            objectToCheck=parent[0]
+            objectToCheck = parent[0]
 
     return parentsList
 
@@ -445,7 +442,7 @@ def get_parents_list(nodeName):
 def hide_shapes_from_history(nodeName):
     """For all shapes parented under a node, set their isHistoricallyInteresting
     attribute to False."""
-    shapes=cmds.listRelatives(nodeName, s=True)
+    shapes = cmds.listRelatives(nodeName, s = True)
     for shape in shapes:
         cmds.setAttr(shape+'.isHistoricallyInteresting', False)
     return
@@ -458,7 +455,7 @@ def isDag(nodeName):
 
 def list_shapes_under_transform(node):
     """Return a list of all shapes under a given transform node."""
-    shapes=cmds.listRelatives(node, shapes=True)
+    shapes=cmds.listRelatives(node, s=True)
     if not shapes:
         return []
     return shapes
@@ -467,11 +464,11 @@ def list_shapes_under_transform(node):
 def node_exists(nodeName, nodeType):
     """Return True if the node exists, None if there is a node with a different
     type, False if it does not exist."""
-    existenceCheck=check_node_existence(nodeName, nodeType)
+    existenceCheck = check_node_existence(nodeName, nodeType)
 
-    if existenceCheck['exists']==False:
+    if existenceCheck['exists'] == False:
         return False
-    elif existenceCheck['sameType']==False:
+    elif existenceCheck['sameType'] == False:
         return None
     return True
 
@@ -483,12 +480,12 @@ def parent(child, parent):
             - child: str.
             - parent: str.
     """
-    relatives=cmds.listRelatives(child, parent=True)
+    relatives = cmds.listRelatives(child, parent=True)
 
     if relatives==None: currentParent=None
     else: currentParent=relatives[0]
 
-    if not currentParent==parent:
+    if not currentParent == parent:
         cmds.parent(child, parent)
     return
 
@@ -503,14 +500,14 @@ def prompt_for_text(title, message):
             - message: str.
                 Message to display in the window.
     """
-    result=cmds.promptDialog(title=title,
+    result = cmds.promptDialog(title=title,
                                message=message,
                                button=['OK', 'Cancel'],
                                defaultButton='OK',
                                cancelButton='Cancel',
                                dismissString='Cancel')
 
-    if result=='OK':
+    if result == 'OK':
         return cmds.promptDialog(query=True, text=True)
     return None
 
@@ -572,7 +569,7 @@ def reset_matrix_attribute(attributeFullpath, order=4):
             - attributeFullpath: str.
                 The full path to the attribute.
                 Should be of the format: {nodeName}.{nodeAttr}
-            - order: int > 1, default=4.
+            - order: int > 1, default = 4.
                 Amount of rows and lines in the matrix.
     """
     cmds.setAttr(attributeFullpath,
@@ -620,7 +617,7 @@ def set_override_color(objectName, colorIndex):
 
 def unparent(obj):
     """Unparent object if it is not already at root level."""
-    if not cmds.listRelatives(obj, parent=True)==None:
+    if not cmds.listRelatives(obj, parent=True) == None:
         cmds.parent(obj, world=True)
     return
 

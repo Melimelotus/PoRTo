@@ -7,6 +7,15 @@ If a function is meant to be used in Maya, it does NOT belong here.
 import re
 
 
+def combine_dics(dicsToCombine):
+    """Combine all the given dics into a single one."""
+    newDic = {}
+    for dicToCombine in dicsToCombine:
+        for key, value in dicToCombine.items():
+            newDic[key]=value
+    return newDic
+
+
 def create_identity_matrix(order):
     """Create an identity matrix of the given order. Return a list of values.
     
@@ -18,7 +27,7 @@ def create_identity_matrix(order):
             - order: int > 1.
                 Amount of rows and lines in the matrix.
     """
-    messages=["# create_identity_matrix - "]
+    messages = ["# create_identity_matrix - "]
 
     # Checks
     if not isinstance(order, int):
@@ -29,25 +38,25 @@ def create_identity_matrix(order):
         raise TypeError(''.join(messages))
     
     # Create matrix
-    identityMatrix=order**2 * [0]
+    identityMatrix = order**2 * [0]
 
     # Set diagonals
-    diagonals=[(order+1) * i
+    diagonals = [(order+1) * i
                  for i in range(0, order)]
     for diagonal in diagonals:
-        identityMatrix[diagonal]=1
+        identityMatrix[diagonal] = 1
 
     return identityMatrix
 
 
-def get_dict_keys_from_value(value, sourceDic):
-    """From a value, get the corresponding keys in a dictionary."""
-    keys=[key for key in sourceDic
+def get_dic_keys_from_value(value, sourceDic):
+    """From a value, gets the corresponding keys in a dictionary."""
+    keys = [key for key in sourceDic
             if sourceDic[key] == value]
     return keys
 
 
-def exchange_dict_items(dic):
+def exchange_dic_items(dic):
     """From a dictionary that only holds strings, set values as keys and keys
     as values. If several keys hold the same value, these keys will be grouped
     into a list."""
@@ -58,15 +67,15 @@ def exchange_dict_items(dic):
             raise TypeError("# exchange_dic_items: dictionary can only hold strings.")
         
     # Get a list of all values existing in dic. They will be the new keys.
-    new_keys=[]
+    newKeys = []
     for key in dic:
-        if dic[key] not in new_keys:
-            new_keys.append(dic[key])
+        if dic[key] not in newKeys:
+            newKeys.append(dic[key])
 
     # From each new key, get the new value.
-    newDic={}
-    for newKey in new_keys:
-        newValue=get_dict_keys_from_value(newKey, dic)
+    newDic = {}
+    for newKey in newKeys:
+        newValue = get_dic_keys_from_value(newKey, dic)
         if len(newValue) == 1:
             newDic[newKey]=newValue[0]
         else:
@@ -92,7 +101,7 @@ def format_several(stringsList, **kwargs):
                 Keys and values to use as arguments for formatting.
                 Any "{key}" found within the str will be replaced with "value".
     """
-    msg=["# formatSeveral() - "]
+    msg = ["# formatSeveral() - "]
 
     # Checks
     if not isinstance(stringsList, list):
@@ -114,12 +123,12 @@ def format_several(stringsList, **kwargs):
             raise TypeError(''.join(msg))
 
     # The script will try to format each string, then append the result
-    formatted=[]
-    regex=re.compile('{[a-zA-Z0-9]+}')
+    formatted = []
+    regex = re.compile('{[a-zA-Z0-9]+}')
 
     for string in stringsList:
         # Find all keys in a string
-        keys=re.findall(regex, string)
+        keys = re.findall(regex, string)
 
         # String does not have any keys to format, append as is
         if not keys:
@@ -127,38 +136,29 @@ def format_several(stringsList, **kwargs):
             continue
 
         # String has keys to format, rebuild it before appending
-        rebuilt=string
+        rebuilt = string
         for key in keys:
             # Remove curly braces from the key
-            rawKey=''.join([chr
+            rawKey = ''.join([chr
                               for chr in key
                               if not chr in ['{', '}']])
             if rawKey in kwargs.keys():
-                rebuilt=rebuilt.replace(key, kwargs[rawKey])
+                rebuilt = rebuilt.replace(key, kwargs[rawKey])
         formatted.append(rebuilt)
 
     return formatted
 
 
-def get_padded_increment(number, padding):
+def get_padded_increment(numberToIncrement, padding):
     """Increment the given number and pad it. Return a string."""
-    incremented=number+1
-    padded=str(incremented).zfill(padding)
+    incremented = numberToIncrement + 1
+    padded = str(incremented).zfill(padding)
     return padded
 
 
 def makelist(arg):
-    """Append the argument to a list if it was not already a list."""
+    '''Append the argument to a list if it was not already a list.'''
     return [arg] if not isinstance(arg, list) else arg
-
-
-def merge_dicts(dicts_to_combine):
-    """Combine all the given dics into a single one."""
-    new_dict={}
-    for dict_to_combine in dicts_to_combine:
-        for key, value in dict_to_combine.items():
-            new_dict[key]=value
-    return new_dict
 
 
 def normalise_color_value(value):
@@ -176,8 +176,8 @@ def respects_regex_pattern(stringToCheck, patternString):
             - patternString: str.
                 String of the regex pattern.
     """
-    compiledPattern=re.compile(patternString)
-    result=compiledPattern.match(stringToCheck)
+    compiledPattern = re.compile(patternString)
+    result = compiledPattern.match(stringToCheck)
     return False if result == None else True
 
 #

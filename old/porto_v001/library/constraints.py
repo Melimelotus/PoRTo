@@ -355,7 +355,7 @@ def quickplace(masters, followers, channels=['translate', 'rotate', 'scale']):
     """
     # Basic type checks
     for arg in [masters, followers, channels]:
-        if not isinstance(arg, (list, str, unicode)):
+        if not isinstance(arg, (list, str)):
             raise TypeError("# quickplace - arguments should be str or lists of str.")
         
     # Adjust arguments: they must be lists.
