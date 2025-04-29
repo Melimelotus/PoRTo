@@ -8,6 +8,7 @@ import maya.utils as mutils
 from data import mayaPreferences
 from library import mayaUtils
 from library import utils
+import porto.library.curveShapes
 
 
 # TODO - figure out best practice: should interfaces be stored in their own package?
@@ -177,7 +178,7 @@ class colorChanger():
     def reset_override(self, *_):
         """Disable all overrideColor attributes for the selection."""
         for obj in self.get_objects_to_work_on():
-            mayaUtils.reset_color_override_attribute(obj)
+            porto.library.curveShapes.reset_color_override_attribute(obj)
         return
     
     def set_custom_override_color(self, targets, rgbValues, *_):
