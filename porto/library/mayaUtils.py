@@ -33,6 +33,54 @@ class undo_chunk(object):
     #
 
 
+class apply_to_selection(object):
+    """Decorator. Apply the function on each selected object."""
+
+    def __call__(self, func):
+        def wrapper(*args, **kwargs):
+            selection_list=cmds.ls(sl=True)
+            for selected in selection_list:
+                func(selected)
+        return wrapper
+    #
+
+
+class apply_to_relative_selected_shapes(object):
+    """Decorator. Execute the function on each shape that is selected or
+    relative to a selected node."""
+
+    def __call__(self, func):
+        def wrapper(*args, **kwargs):
+            shapes_node_types=[
+                'camera',
+                'locator',
+                'mesh',
+                'nurbsCurve',
+                'nurbsSurface',
+            ]
+
+            # Build list of relative selected shapes.
+            selection_list=cmds.ls(sl=True)
+            relative_selected_shapes_list=[]
+            for selected_node in selection_list:
+                node_type=cmds.nodeType(selected_node)
+                if node_type in shapes_node_types:
+                    # Node is a shape. Append.
+                    relative_selected_shapes_list.append(selected_node)
+                    continue
+                # Node is not a shape. Find relative shapes.
+                children_shapes=cmds.listRelatives(selected_node, shapes=True)
+                if children_shapes:
+                    for child_shape in children_shapes:
+                        relative_selected_shapes_list.append(child_shape)
+            
+            # Execute function for each relative selected shape
+            for relative_shape in relative_selected_shapes_list:
+                func(relative_shape)
+        return wrapper
+    #
+
+
 def add_group_as_parent(targetName, groupName):
     """Create a group and gives it the coordinates of the target. The target
     will then be parented under that group.
@@ -51,20 +99,21 @@ def add_group_as_parent(targetName, groupName):
             groupAttr='{groupName}.{channel}{axis}'.format(
                 groupName=groupName,
                 channel=channel,
-                axis=axis)
+                axis=axis,
+            )
             targetAttr='{targetName}.{channel}{axis}'.format(
                 targetName=targetName,
                 channel=channel,
-                axis=axis)
-            
+                axis=axis,
+            )
             cmds.setAttr(groupAttr, cmds.getAttr(targetAttr))
     
     # Parent
-    currentParent=cmds.listRelatives(targetName, parent=True)
-    if currentParent==None or currentParent==[]:
+    current_parent=cmds.listRelatives(targetName, parent=True)
+    if current_parent==None or current_parent==[]:
         cmds.parent(targetName, groupName)
     else:
-        cmds.parent(groupName, currentParent)
+        cmds.parent(groupName, current_parent)
         cmds.parent(targetName, groupName)
     return
 
@@ -485,10 +534,10 @@ def parent(child, parent):
     """
     relatives=cmds.listRelatives(child, parent=True)
 
-    if relatives==None: currentParent=None
-    else: currentParent=relatives[0]
+    if relatives==None: current_parent=None
+    else: current_parent=relatives[0]
 
-    if not currentParent==parent:
+    if not current_parent==parent:
         cmds.parent(child, parent)
     return
 
@@ -503,61 +552,50 @@ def prompt_for_text(title, message):
             - message: str.
                 Message to display in the window.
     """
-    result=cmds.promptDialog(title=title,
-                               message=message,
-                               button=['OK', 'Cancel'],
-                               defaultButton='OK',
-                               cancelButton='Cancel',
-                               dismissString='Cancel')
+    result=cmds.promptDialog(
+        title=title,
+        message=message,
+        button=['OK', 'Cancel'],
+        defaultButton='OK',
+        cancelButton='Cancel',
+        dismissString='Cancel',
+    )
 
     if result=='OK':
         return cmds.promptDialog(query=True, text=True)
     return None
 
 
-def remove_unused_shape_origs(nodeName): #
-    """Find and remove all unused shape origs under a transform."""
-    pass
-    return
-
-
-def rename_shapes(nodeName):
+def rename_shapes(transform):
     """Rename all shapes under a transform.
     
     Best used for renaming controller shapes.
     If several shapes are found, add an index to them so that they respect
-    the following format: '{nodeName}Shape{index}'.
+    the following format: '{transform}Shape{index}'.
     """
-    # TODO : deal with shape Origs
-    shapes=list_shapes_under_transform(nodeName)
-
-    shapes_amount=len(shapes)
-    if not shapes_amount:
+    # List all shapes under transform
+    shapes_list=list_shapes_under_transform(transform)
+    if not shapes_list:
         # Nothing to rename
         return
+    
+    # Rename
+    shapes_amount=len(shapes_list)
+    new_name_format='{transform}{shape_type}{index}'
 
-    for index, shape in enumerate(shapes, 1):
-        if shapes_amount==1:
-            # Only one shape under transform
-            new_shape_name='{nodeName}Shape'.format(
-                nodeName=nodeName
-                )
-        else:
-            # Several shapes: add index to their names.
-            new_shape_name='{nodeName}Shape{index}'.format(
-                nodeName=nodeName,
-                index=index
-            )
-        cmds.rename(shape, new_shape_name)
-    return
+    for index, current_shape_name in enumerate(shapes_list, 1):
+        # Build name
+        shape_type='ShapeOrig' if 'Orig' in current_shape_name else 'Shape'
+        index='' if shapes_amount==1 else str(index)
 
+        new_name=new_name_format.format(
+            transform=transform,
+            shape_type=shape_type,
+            index=index,
+        )
+        # Rename
+        cmds.rename(current_shape_name, new_name)
 
-def reset_color_override_attribute(node):
-    """Disable and clean all colorOverride attributes."""
-    cmds.setAttr('{node}.overrideEnabled'.format(node=node), False)
-    cmds.setAttr('{node}.overrideColor'.format(node=node), 0)
-    cmds.setAttr('{node}.overrideRGBColors'.format(node=node), False)
-    cmds.setAttr('{node}.overrideColorRGB'.format(node=node), 0, 0, 0)
     return
 
 
@@ -581,17 +619,29 @@ def reset_matrix_attribute(attributeFullpath, order=4):
     return
 
 
-def select_shapes():
-    """Get the shapes parented under the current selection and replace the
-    selection with those shapes."""
-    selection=cmds.ls(sl=True)
-    shapes=[]
-    for obj in selection:
-        relativeShapes=list_shapes_under_transform(obj)
-        for relativeShape in relativeShapes:
-            shapes.append(str(relativeShape))
-    cmds.select(shapes, r=True)
+def reset_transform_values(target):
+    """Reset the transform values of the target node.
+    
+    Does not change locked attributes.
+    """
+    reset_values_dict={
+        'translate': 0,
+        'rotate': 0,
+        'scale': 1,
+    }
+    for axis in ['X', 'Y', 'Z']:
+        for channel, reset_value in reset_values_dict.items():
+            attribute='{target}.{channel}{axis}'.format(
+                target=target,
+                channel=channel,
+                axis=axis
+            )
+            is_locked=cmds.getAttr(attribute, lock=True)
+            if is_locked:
+                continue
+            cmds.setAttr(attribute, reset_value)
     return
+
 
 def set_default_value(attributePath, value):
     """Set the attribute default's value to the specified value.
@@ -600,21 +650,9 @@ def set_default_value(attributePath, value):
             - attributePath: str.
             - value: any type.
     """
-    # get attribute type
-    # action depends on attr type (flag might need to be precised)
+    # TODO get attribute type
+    # action depends on attr type (flag might need to be precised)?
     cmds.addAttr(attributePath, e=1, dv=value)
-    return
-
-
-def set_override_color(objectName, colorIndex):
-    """Set the overrideColor attribute of the object to the given color index.
-
-        Args:
-            - objectName: str.
-            - colorIndex: int.
-    """
-    cmds.setAttr(objectName + 'Shape.overrideEnabled', 1)
-    cmds.setAttr(objectName + 'Shape.overrideColor', colorIndex)
     return
 
 
