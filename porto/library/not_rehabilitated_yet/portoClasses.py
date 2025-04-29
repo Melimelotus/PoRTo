@@ -121,15 +121,15 @@ class PortoModule(object):
         """Create module attributes on the root group."""
         rootGroupName = self.get_root_group_name()
         # Module Type
-        mayaUtils.force_add_attribute(nodeName=rootGroupName,
+        mayaUtils.force_add_attribute(node_name=rootGroupName,
                                       attributeName='moduleType',
                                       dataType='string')
         # Parent module
-        mayaUtils.force_add_attribute(nodeName=rootGroupName,
+        mayaUtils.force_add_attribute(node_name=rootGroupName,
                                       attributeName='parentModule',
                                       attributeType='message')
         # Parenting output
-        mayaUtils.force_add_attribute(nodeName=rootGroupName,
+        mayaUtils.force_add_attribute(node_name=rootGroupName,
                                       attributeName='parentingOutput',
                                       attributeType='message')
         return
@@ -138,8 +138,8 @@ class PortoModule(object):
         """Create the module's placement group."""
         placementGroupName = self.get_placement_group_name()
 
-        mayaUtils.create_node(nodeName = placementGroupName,
-                              nodeType = 'transform')
+        mayaUtils.create_node(node_name = placementGroupName,
+                              node_type = 'transform')
         mayaUtils.parent(child = placementGroupName,
                          parent = self.get_root_group_name())
         
@@ -150,8 +150,8 @@ class PortoModule(object):
     def create_root_group(self):
         """Create the module's root group and its attributes."""
         rootGroupName = self.get_root_group_name()
-        mayaUtils.create_node(nodeName = rootGroupName,
-                              nodeType = 'transform')
+        mayaUtils.create_node(node_name = rootGroupName,
+                              node_type = 'transform')
         return
 
     def exists(self):
@@ -161,8 +161,8 @@ class PortoModule(object):
         Raise an error if there is a node with the same name but a different
         type.
         """
-        existence = mayaUtils.node_exists(nodeName = self.get_root_group_name(),
-                                          nodeType = 'transform')
+        existence = mayaUtils.node_exists(node_name=self.get_root_group_name(),
+                                          node_type='transform')
 
         if existence == None:
             msg="# PortoModule.exists() - found a node named like the root module but of a different type!"

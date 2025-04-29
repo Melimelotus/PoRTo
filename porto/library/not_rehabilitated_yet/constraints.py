@@ -318,8 +318,8 @@ def prebound_matrix_constraint(follower, followerRef, master, masterRef,
     # Create group above follower: this group will receive the constraint
     groupName = naming.create_group_name_from_string(groupBasename, follower)
     
-    mayaUtils.add_group_as_parent(targetName = follower,
-                                  groupName = groupName)
+    mayaUtils.insert_parent(target = follower,
+                                  group_name = groupName)
     
     for channel in channels:
         # Build attribute names

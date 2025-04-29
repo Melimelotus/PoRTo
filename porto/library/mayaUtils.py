@@ -63,7 +63,7 @@ class apply_to_relative_selected_shapes(object):
             selection_list=cmds.ls(sl=True)
             relative_selected_shapes_list=[]
             for selected_node in selection_list:
-                node_type=cmds.nodeType(selected_node)
+                node_type=cmds.node_type(selected_node)
                 if node_type in shapes_node_types:
                     # Node is a shape. Append.
                     relative_selected_shapes_list.append(selected_node)
@@ -81,7 +81,7 @@ class apply_to_relative_selected_shapes(object):
     #
 
 
-def add_group_as_parent(targetName, groupName):
+def insert_parent(target, group_name):
     """Create a group and gives it the coordinates of the target. The target
     will then be parented under that group.
 
@@ -91,30 +91,30 @@ def add_group_as_parent(targetName, groupName):
             - groupName: str.
                 Name of the group that will be created.
     """
-    cmds.createNode('transform', n=groupName)
+    cmds.createNode('transform', n=group_name)
 
     # Sets coordinates
     for axis in ['X', 'Y', 'Z']:
         for channel in ['translate', 'rotate', 'scale']:
-            groupAttr='{groupName}.{channel}{axis}'.format(
-                groupName=groupName,
+            group_attribute='{group_name}.{channel}{axis}'.format(
+                group_name=group_name,
                 channel=channel,
                 axis=axis,
             )
-            targetAttr='{targetName}.{channel}{axis}'.format(
-                targetName=targetName,
+            target_attribute='{target}.{channel}{axis}'.format(
+                target=target,
                 channel=channel,
                 axis=axis,
             )
-            cmds.setAttr(groupAttr, cmds.getAttr(targetAttr))
+            cmds.setAttr(group_attribute, cmds.getAttr(target_attribute))
     
     # Parent
-    current_parent=cmds.listRelatives(targetName, parent=True)
+    current_parent=cmds.listRelatives(target, parent=True)
     if current_parent==None or current_parent==[]:
-        cmds.parent(targetName, groupName)
+        cmds.parent(target, group_name)
     else:
-        cmds.parent(groupName, current_parent)
-        cmds.parent(targetName, groupName)
+        cmds.parent(group_name, current_parent)
+        cmds.parent(target, group_name)
     return
 
 
@@ -124,12 +124,14 @@ def break_incoming_connection(attributeFullpath):
         Args:
             - attributeFullpath: str.
                 The full path to the attribute.
-                Should be of the format: {nodeName}.{nodeAttr}
+                Should be of the format: {node_name}.{nodeAttr}
     """
     # Get incoming connections
-    connections=cmds.listConnections(attributeFullpath,
-                                       source=True,
-                                       plugs=True)
+    connections=cmds.listConnections(
+        attributeFullpath,
+        source=True,
+        plugs=True,
+    )
     # Break
     if connections:
         for connection in connections:
@@ -137,54 +139,56 @@ def break_incoming_connection(attributeFullpath):
     return
 
 
-def check_node_existence(nodeName, nodeType):
+def check_node_existence(node_name, node_type):
     """Check if a node of the given name and type exists already. Return a
     dic holding the results of each check.
 
         Args:
-            - nodeName: str.
-            - nodeType: str.
+            - node_name: str.
+            - node_type: str.
 
         Returns:
-            - resultDic: dic.
+            - result: dict.
                 {'exists': bool, 'sameType': bool}
     """
 
-    exists=cmds.objExists(nodeName)
+    exists=cmds.objExists(node_name)
 
     if exists:
-        currentType=get_node_type(nodeName)
+        currentType=get_node_type(node_name)
     else:
         currentType=None
     
-    resultDic={'exists': exists,
-                 'sameType': currentType==nodeType}
-    return resultDic
+    result={
+        'exists': exists,
+        'sameType': currentType==node_type,
+    }
+    return result
 
 
-def clean_history(nodeName):
+def clean_history(node_name):
     """Clean the history from a node."""
-    cmds.delete(nodeName, constructionHistory=True)
+    cmds.delete(node_name, constructionHistory=True)
     return
 
 
-def create_discrete_node(nodeName, nodeType):
+def create_discrete_node(node_name, node_type):
     """Create a node of the given type with the given name and set its
     isHistoricallyInteresting attribute to False.
         
         Args:
-            - nodeType: str.
+            - node_type: str.
                 The type of the node to create. transform, colorConstant, ...
             
-            - nodeName: str.
+            - node_name: str.
                 How to name the node.
     """
-    create_node(nodeName, nodeType)
-    cmds.setAttr(nodeName + '.isHistoricallyInteresting', 0)
+    create_node(node_name, node_type)
+    cmds.setAttr(node_name+'.isHistoricallyInteresting', 0)
     return
 
 
-def create_node(nodeName, nodeType):
+def create_node(node_name, node_type):
     """Create a node with the given name and type. Skip creation if it exists
     already.
 
@@ -193,10 +197,10 @@ def create_node(nodeName, nodeType):
     Raise an error if a node with the same name but a different type is found.
         
         Args:
-            - nodeName: str.
-            - nodeType: str.
+            - node_name: str.
+            - node_type: str.
     """
-    existenceCheck=check_node_existence(nodeName, nodeType)
+    existenceCheck=check_node_existence(node_name, node_type)
 
     if existenceCheck['exists']==True and existenceCheck['sameType']==True:
         # Skip
@@ -206,12 +210,12 @@ def create_node(nodeName, nodeType):
         msg="# create_node() - conflict in scene. A node with the same name but a different type exists already."
         raise TypeError(msg)
 
-    if nodeType in ['locator', 'spaceLocator']:
+    if node_type in ['locator', 'spaceLocator']:
         # Locator need to be created via their dedicated function
         # Otherwise, the shape will receive the name but NOT the transform
-        cmds.spaceLocator(name=nodeName)
+        cmds.spaceLocator(name=node_name)
     else:
-        cmds.createNode(nodeType, name=nodeName)
+        cmds.createNode(node_type, name=node_name)
     return True
 
 
@@ -250,7 +254,7 @@ def decompose_matrix(matrixToDecompose):
     return result
 
 
-def flatten_components_list(listToFlatten):
+def flatten_components_list(list_to_flatten):
     """Flatten a list of components: make sure that each component is explicitly
     listed.
     
@@ -276,7 +280,7 @@ def flatten_components_list(listToFlatten):
     regex=re.compile('^([a-zA-Z|_0-9]+\.[a-z]+)\[([0-9]+)[:]([0-9]+)\]$')
     
     # Check each element and flatten if necessary
-    for element in listToFlatten:
+    for element in list_to_flatten:
         match=regex.match(element)
 
         if match==None:
@@ -299,35 +303,35 @@ def flatten_components_list(listToFlatten):
     return flattened
 
 
-def force_add_attribute(nodeName, attributeName, **kwargs):
+def force_add_attribute(node_name, attributeName, **kwargs):
     """Forcefully create an attribute on the given node: delete any conflicting
     attribute and then add the new one.
     
         Args:
-            - nodeName: str.
+            - node_name: str.
                 Name of the node which will receive the attribute.
             - attributeName: str.
                 Name of the attribute to create.
     """
     # Look for conflicts and delete them
-    if cmds.attributeQuery(attributeName, node=nodeName, exists=True):
-        cmds.deleteAttr(nodeName + '.' + attributeName)
+    if cmds.attributeQuery(attributeName, node=node_name, exists=True):
+        cmds.deleteAttr(node_name + '.' + attributeName)
     # Create attribute
-    cmds.addAttr(nodeName, ln=attributeName, **kwargs)
+    cmds.addAttr(node_name, ln=attributeName, **kwargs)
     return
 
 
-def get_average_position(objList):
-    """Get the average position of a list of objects. Return a list holding
+def get_average_position(objects_list):
+    """Get the average position of a list of transforms. Return a list holding
     three floats: [tx, ty, tz]."""
     # Checks
-    if not isinstance(objList, list):
+    if not isinstance(objects_list, list):
         raise TypeError('# get_average_position() - arg must be a list.')
-    if objList==[]:
+    if objects_list==[]:
         return [0.0,0.0,0.0]
     
     # Flatten list ( ['obj.vtx[0:5]'] >>>> ['obj.vtx[0]', 'obj.vtx[1]', ...] )
-    flattenedList=flatten_components_list(objList)
+    flattenedList=flatten_components_list(objects_list)
     amount=len(flattenedList)
 
     # Dictionary holding all values for each channel
@@ -346,19 +350,19 @@ def get_average_position(objList):
     return means
 
 
-def get_center_position(objList):
+def get_center_position(objects_list):
     """Get the center position of a list of objects. Return a list holding
     three floats: [tx, ty, tz]."""
     # Checks
-    if not isinstance(objList, list):
+    if not isinstance(objects_list, list):
         raise TypeError('# get_center_position() - arg must be a list.')
-    if objList==[]:
+    if objects_list==[]:
         return [0.0,0.0,0.0]
     
     # Dictionary holding min and max values for each channel
     boundsDic={}
     channels=['tx', 'ty', 'tz']
-    flattenedList=flatten_components_list(objList)
+    flattenedList=flatten_components_list(objects_list)
 
     # Initialize min/max values from the first object in the list
     values=cmds.xform(flattenedList[0],
@@ -392,7 +396,7 @@ def get_center_position(objList):
     return centerCoords
 
 
-def get_locked_channels(objectToCheck):
+def get_locked_channels(node_name):
     """Get a dictionary of all locked axes for each transformation channel.
         
         Args:
@@ -407,8 +411,8 @@ def get_locked_channels(objectToCheck):
     for channel in ['translate', 'rotate', 'scale']:
         lockedAxes=[]
         for axis in axes:
-            attribute='{objectToCheck}.{channel}{upperCaseAxis}'.format(
-                objectToCheck=objectToCheck,
+            attribute='{node_name}.{channel}{upperCaseAxis}'.format(
+                node_name=node_name,
                 channel=channel,
                 upperCaseAxis=axis.upper()
             )
@@ -438,7 +442,7 @@ def get_current_filename():
     return filename
 
 
-def get_node_type(nodeName):
+def get_node_type(node_name):
     """Return the node type of the given node.
     
     The function will inspect parented Shapes, if there are any. This helps
@@ -446,27 +450,27 @@ def get_node_type(nodeName):
     are just transforms.
     """
 
-    nodeType=cmds.nodeType(nodeName)
+    node_type=cmds.node_type(node_name)
 
     # Some nodes, such as locators or curves, are defined by their shapes.
-    # This means that nodeType will return 'transform' for them.
+    # This means that node_type will return 'transform' for them.
     # We need to check their shapes.
-    if nodeType=='transform':
+    if node_type=='transform':
         childrenShapes=cmds.listRelatives(
-            nodeName,
+            node_name,
             noIntermediate=True,
             shapes=True,
         )
         if isinstance(childrenShapes, list) and not childrenShapes==[]:
-            nodeType=cmds.nodeType(childrenShapes[0])
+            node_type=cmds.node_type(childrenShapes[0])
 
-    return nodeType
+    return node_type
 
 
-def get_parents_list(nodeName):
+def get_parents_list(node_name):
     """Returns a list of all parents of a given node, in parenting order."""
 
-    parent=cmds.listRelatives(nodeName, parent=True)
+    parent=cmds.listRelatives(node_name, parent=True)
 
     if parent==None or parent==[]:
         return []
@@ -491,18 +495,18 @@ def get_parents_list(nodeName):
     return parentsList
 
 
-def hide_shapes_from_history(nodeName):
+def hide_shapes_from_history(node_name):
     """For all shapes parented under a node, set their isHistoricallyInteresting
     attribute to False."""
-    shapes=cmds.listRelatives(nodeName, s=True)
+    shapes=cmds.listRelatives(node_name, s=True)
     for shape in shapes:
         cmds.setAttr(shape+'.isHistoricallyInteresting', False)
     return
 
 
-def isDag(nodeName):
+def isDag(node_name):
     """Predicate. Return True if the node is a dagNode."""
-    return 'dagNode' in cmds.nodeType(nodeName, inherited=True)
+    return 'dagNode' in cmds.node_type(node_name, inherited=True)
 
 
 def list_shapes_under_transform(node):
@@ -513,10 +517,10 @@ def list_shapes_under_transform(node):
     return shapes
 
 
-def node_exists(nodeName, nodeType):
+def node_exists(node_name, node_type):
     """Return True if the node exists, None if there is a node with a different
     type, False if it does not exist."""
-    existenceCheck=check_node_existence(nodeName, nodeType)
+    existenceCheck=check_node_existence(node_name, node_type)
 
     if existenceCheck['exists']==False:
         return False
@@ -609,7 +613,7 @@ def reset_matrix_attribute(attributeFullpath, order=4):
         Args:
             - attributeFullpath: str.
                 The full path to the attribute.
-                Should be of the format: {nodeName}.{nodeAttr}
+                Should be of the format: {node_name}.{nodeAttr}
             - order: int > 1, default=4.
                 Amount of rows and lines in the matrix.
     """
