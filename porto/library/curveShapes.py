@@ -12,7 +12,7 @@ from library import mayaUtils
 from library import utils
 
 class ShapesCoords():
-    """Hold the coordinates for different shapes of curves."""
+    """Hold the coordinates required to draw different shapes of curves."""
 
     def __init__(self):
         self.flat_coords_dict=self.define_flat_coords()
@@ -191,6 +191,41 @@ class ShapesCoords():
         self.add_shape(target, curve_name, linear)
         return
     #
+
+
+def switch_line_width(target_shape):
+    """Change the width attribute of target_shape to make it thicker or thinner.
+    
+    If the curve is thick (width value > 2): set width to 1.
+    If the curve is thin (width value < 2): set width to 2.
+    """
+    current_width=cmds.getAttr(target_shape+'.lineWidth')
+    new_width=1 if current_width >= 2 else 2
+    cmds.setAttr(target_shape+'.lineWidth', new_width)
+    return
+
+
+def set_override_color(objectName, colorIndex):
+    """Set the overrideColor attribute of the object to the given color index.
+
+        Args:
+            - objectName: str.
+            - colorIndex: int.
+    """
+    cmds.setAttr(objectName + 'Shape.overrideEnabled', 1)
+    cmds.setAttr(objectName + 'Shape.overrideColor', colorIndex)
+    return
+
+
+def reset_color_override_attribute(node):
+    """Disable and clean all colorOverride attributes."""
+    cmds.setAttr('{node}.overrideEnabled'.format(node=node), False)
+    cmds.setAttr('{node}.overrideColor'.format(node=node), 0)
+    cmds.setAttr('{node}.overrideRGBColors'.format(node=node), False)
+    cmds.setAttr('{node}.overrideColorRGB'.format(node=node), 0, 0, 0)
+    return
+
+
 
 
 #
