@@ -201,38 +201,38 @@ class ShapesColor():
 
     def __init__(self):
         self.mayaColorIndex={
-            0:[120,120,120],
-            1:[0,0,0],
-            2:[64,64,64],
-            3:[153,153,153],
-            4:[155,0,40],
-            5:[0,4,96],
-            6:[0,0,255],
-            7:[0,70,25],
-            8:[38,0,67],
-            9:[200,0,200],
-            10:[138,72,51],
-            11:[63,35,31],
-            12:[153,38,0],
-            13:[255,0,0],
-            14:[0,255,0],
-            15:[0,65,153],
-            16:[255,255,255],
-            17:[255,255,0],
-            18:[100,220,255],
-            19:[67,255,163],
-            20:[255,176,176],
-            21:[228,172,121],
-            22:[255,255,199],
-            23:[0,153,84],
-            24:[161,106,48],
-            25:[158,161,48],
-            26:[104,161,48],
-            27:[48,161,93],
-            28:[48,161,161],
-            29:[48,103,161],
-            30:[111,48,161],
-            31:[161,48,106],
+            0: [120,120,120],
+            1: [0,0,0],
+            2: [64,64,64],
+            3: [153,153,153],
+            4: [155,0,40],
+            5: [0,4,96],
+            6: [0,0,255],
+            7: [0,70,25],
+            8: [38,0,67],
+            9: [200,0,200],
+            10: [138,72,51],
+            11: [63,35,31],
+            12: [153,38,0],
+            13: [255,0,0],
+            14: [0,255,0],
+            15: [0,65,153],
+            16: [255,255,255],
+            17: [255,255,0],
+            18: [100,220,255],
+            19: [67,255,163],
+            20: [255,176,176],
+            21: [228,172,121],
+            22: [255,255,199],
+            23: [0,153,84],
+            24: [161,106,48],
+            25: [158,161,48],
+            26: [104,161,48],
+            27: [48,161,93],
+            28: [48,161,161],
+            29: [48,103,161],
+            30: [111,48,161],
+            31: [161,48,106],
         }
         return
     
@@ -262,12 +262,12 @@ class ShapesColor():
             cmds.setAttr('{target}.overrideColorRGB'.format(target=target), *rgbValues)
         return
     
-    def set_index_override_color(self, targets_list, colorIndex, *_):
+    def set_index_override_color(self, targets_list, mayaColorIndex, *_):
         """Set an index override color for the selection.
             Args:
                 - targets_list: list of str.
                     Objects whose overrideColor attributes must be changed.
-                - colorIndex: int.
+                - mayaColorIndex: int.
         """
         for target in targets_list:
             # Activate override
@@ -275,7 +275,7 @@ class ShapesColor():
             cmds.setAttr('{target}.overrideRGBColors'.format(target=target), False)
 
             # Override with index
-            cmds.setAttr('{target}.overrideColor'.format(target=target), colorIndex)
+            cmds.setAttr('{target}.overrideColor'.format(target=target), mayaColorIndex)
         return
     #
 
@@ -362,7 +362,7 @@ class ColorChangerUI(ShapesColor):
             '''RGB color values must be in the [0.0; 1.0] range instead of [0; 255].'''
             backgroundColors=[
                 utils.normalise_color_value(value)
-                for value in self.colorIndex[index]
+                for value in self.mayaColorIndex[index]
             ]
             # Create button and append to list
             indexButton=cmds.button(label=str(index), backgroundColor=backgroundColors)
@@ -406,17 +406,19 @@ class ColorChangerUI(ShapesColor):
                               changeCommand=self.apply_hue_sliders_values)
 
         for index in range(0,32): # TODO attr/var holding button amount to use as max range
-            cmds.button(self.colorIndexControllers[index], edit=True,
-                        command=partial(self.apply_color_index_values,index))
+            cmds.button(
+                self.colorIndexControllers[index], edit=True,
+                command=partial(self.apply_color_index_values, index),
+            )
         # Show window
         cmds.showWindow(self.windowName)
         return
     
-    def apply_color_index_values(self, colorIndex, *_):
+    def apply_color_index_values(self, mayaColorIndex, *_):
         """Apply the chosen color index value to the selection."""
         self.set_index_override_color(
             targets_list=self.get_objects_to_work_on(),
-            colorIndex=colorIndex,
+            mayaColorIndex=mayaColorIndex,
         )
         mutils.processIdleEvents()
         return
@@ -492,9 +494,5 @@ def switch_line_width(target_shape):
     new_width=1 if current_width >= 2 else 2
     cmds.setAttr(target_shape+'.lineWidth', new_width)
     return
-
-
-
-
 
 #
