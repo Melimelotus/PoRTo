@@ -8,7 +8,7 @@ from maya import cmds
 from maya.api import OpenMaya # API 2.0
 
 from data import portoPreferences
-from library import colorChanger
+from library import curveShapes
 from library import curveShapeSelector
 from library import constraints
 from library import mayaUtils
@@ -45,7 +45,7 @@ class ColorChanger():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        colorChanger.colorChanger().build_and_show()
+        curveShapes.ShapesColor().build_and_show()
         return
     #
 
@@ -77,9 +77,9 @@ class ConnectOffsetParentMatrix():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        messages = ["# connect_offset_parent_matrix() - "]
+        messages=["# connect_offset_parent_matrix() - "]
         # Get selection
-        selection = cmds.ls(sl=True)
+        selection=cmds.ls(sl=True)
         if not selection:
             messages.append("no object selected. Skipped.")
             cmds.warning(''.join(messages))
@@ -111,14 +111,14 @@ class CreateEmptyModule():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        locs = portoUtils.get_selected_placement_locators()
+        locs=portoUtils.get_selected_placement_locators()
 
         if not locs:
             # Nothing usable selected. Prompt user for module data.
             portoUI.emptyModuleCreator().build_and_show()
             return
 
-        locReparenting = {}
+        locReparenting={}
 
         # Build modules and get locReparenting data
         for loc in locs:
@@ -136,8 +136,8 @@ class CreateEmptyModule():
             if portoUtils.is_placement_loc(parent):
                 # Locator is parented under another placement locator
                 decomposeParent=naming.decompose_porto_name(parent)
-                sameName=(decomposeParent['name'] == decompose['name'])
-                sameSide=(decomposeParent['side'] == decompose['side'])
+                sameName=(decomposeParent['name']==decompose['name'])
+                sameSide=(decomposeParent['side']==decompose['side'])
 
                 if sameName and sameSide:
                     # Locator and parent belong to the same chain
@@ -149,7 +149,7 @@ class CreateEmptyModule():
                                     side=decomposeParent['side'])
                     if parentModule.exists():
                         parentModule.parentingOutput=parentModule.get_parenting_attr_output()
-                    empty.parentModule = parentModule
+                    empty.parentModule=parentModule
 
             # Build module
             if empty.exists():
@@ -192,7 +192,7 @@ class SelectionToLocator():
             - Lattice Points (46)
             - NURBS Surface Face (72)
         '''
-        components=cmds.filterExpand(sm = (28, 31, 32, 34, 46, 72))
+        components=cmds.filterExpand(sm=(28, 31, 32, 34, 46, 72))
         if components==None: components=[]
 
         # Checks
@@ -204,14 +204,14 @@ class SelectionToLocator():
             raise ValueError(''.join(messages))
         
         # Combine into a flattened list
-        sel = mayaUtils.flatten_components_list(transforms + components)
+        sel=mayaUtils.flatten_components_list(transforms + components)
 
         # Prompt user for a name
-        promptMsg = ['Enter a name for the locator.\n',
+        promptMsg=['Enter a name for the locator.\n',
                     'An empty string will result in a default name.']
         name=mayaUtils.prompt_for_text(title='Name', message=''.join(promptMsg))
 
-        if name == None:
+        if name==None:
             # User dismissed the text prompt. Cancel operation.
             return
         
@@ -220,16 +220,16 @@ class SelectionToLocator():
             # String still holds illegal characters. Warn user and empty string.
             messages.append("name holds illegal characters. Switching to default name.")
             cmds.warning("".join(messages))
-            name = ''
+            name=''
 
         # Create and place
         if not name:
             # Let maya handle the naming
-            name = cmds.spaceLocator()[0]
+            name=cmds.spaceLocator()[0]
         else:
             # Use the name inputted by the user
             mayaUtils.create_node(name, 'locator')
-        cmds.xform(name, translation =  mayaUtils.get_center_position(sel))
+        cmds.xform(name, translation= mayaUtils.get_center_position(sel))
         return name
     #
 
@@ -248,12 +248,14 @@ class SelectionToHierarchy():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        messages = ["# create_hierarchy_from_selection_order() - "]
+        messages=["# create_hierarchy_from_selection_order() - "]
         # Get selection
-        selectedObjects=cmds.ls(sl = True,
-                                dagObjects = True,
-                                objectsOnly = True,
-                                transforms = True)
+        selectedObjects=cmds.ls(
+            sl=True,
+            dagObjects=True,
+            objectsOnly=True,
+            transforms=True,
+        )
         
         # Checks
         if len(selectedObjects) < 2:
@@ -293,9 +295,9 @@ class SelectionToHierarchy():
                 cmds.warning(''.join(messages))
 
             # Locked channels check
-            lockedChannelsDic = mayaUtils.get_locked_channels(selectedObject)
+            lockedChannelsDic=mayaUtils.get_locked_channels(selectedObject)
             for channel, lockedAxes in lockedChannelsDic.items():
-                if not lockedAxes == []:
+                if not lockedAxes==[]:
                     # Warning: one of the transformation channels is locked!
                     messages.append(
                         "{selectedObject} has one of its {channel} channels locked.".format(
@@ -338,41 +340,41 @@ class ParentSelectedModules():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        messages = ["# parent_selected_modules() - "]
+        messages=["# parent_selected_modules() - "]
 
         # Get selection
-        MSelection = OpenMaya.MGlobal.getActiveSelectionList()
-        count = MSelection.length()
-        maxIndex = count - 1
+        MSelection=OpenMaya.MGlobal.getActiveSelectionList()
+        count=MSelection.length()
+        maxIndex=count - 1
         if count < 2:
             messages.append("not enough objects selected")
             raise Exception(''.join(messages))
 
         # Get parent name
-        parent_obj = MSelection.getDependNode(maxIndex)
-        parent_name = OpenMaya.MFnDependencyNode(parent_obj).name()
+        parent_obj=MSelection.getDependNode(maxIndex)
+        parent_name=OpenMaya.MFnDependencyNode(parent_obj).name()
 
-        parentModule = None
-        if not parent_name == portoPreferences.riggingModulesGroupName:
+        parentModule=None
+        if not parent_name==portoPreferences.riggingModulesGroupName:
             # Check parent
             if not naming.respects_porto_nomenclature(parent_name):
                 # Not dealing with a PoRTo node.
                 messages.append("{parent} is not the root group of a PortoModule.".format(parent=parent_name))
                 raise Exception(''.join(messages))
         
-            if not naming.get_suffix(parent_name) == 'grp':
+            if not naming.get_suffix(parent_name)=='grp':
                 # Not dealing with a root group.
                 messages.append("{parent} is not the root group of a PortoModule.".format(parent=parent_name))
                 raise Exception(''.join(messages))
             
             # Build PortoModule for parent
-            parentModule = portoModules.build_porto_module_from_root_name(parent_name)
+            parentModule=portoModules.build_porto_module_from_root_name(parent_name)
 
         # Iterate through MSelection and act on each child
         for index in range(0, maxIndex):
             # Get child name
-            child_obj = MSelection.getDependNode(index)
-            child_name = OpenMaya.MFnDependencyNode(child_obj).name()
+            child_obj=MSelection.getDependNode(index)
+            child_name=OpenMaya.MFnDependencyNode(child_obj).name()
 
             # Check
             if not naming.respects_porto_nomenclature(child_name):
@@ -380,15 +382,15 @@ class ParentSelectedModules():
                 messages.append("{child_name} is not the root group of a PortoModule. Skipped.".format(child_name=child_name))
                 raise Exception(''.join(messages))
             
-            if not naming.get_suffix(child_name) == 'grp':
+            if not naming.get_suffix(child_name)=='grp':
                 # Not dealing with a root group.
                 messages.append("{child_name} is not the root group of a PortoModule. Skipped.".format(child_name=child_name))
                 raise Exception(''.join(messages))
 
             # Build childModule and parent
-            childModule = portoModules.build_porto_module_from_root_name(child_name)
+            childModule=portoModules.build_porto_module_from_root_name(child_name)
 
-            childModule.parentModule = parentModule
+            childModule.parentModule=parentModule
             childModule.set_parent_module_attribute()
             childModule.parent_module()
             # End children iteration
@@ -406,11 +408,11 @@ class ReverseSelectionOrder():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        sel = cmds.ls(sl=True)
+        sel=cmds.ls(sl=True)
         sel.reverse()
         cmds.select(sel, replace=True)
         # Make sure the user knows what happened
-        message = "reversed selection order. First element: '{}'".format(sel[0])
+        message="reversed selection order. First element: '{}'".format(sel[0])
         cmds.warning(message)
         return
     #
@@ -438,10 +440,10 @@ class QuickplaceSelectionMultipleFollowers():
 
         # Place and leave master selected
         master=selectionList[0]
-        constraints.quickplace(masters = master,
-                               followers = selectionList[1:],
-                               channels = ['translate', 'rotate'])
-        cmds.select(master, r = True)
+        constraints.quickplace(masters=master,
+                               followers=selectionList[1:],
+                               channels=['translate', 'rotate'])
+        cmds.select(master, r=True)
         return
     #
 
@@ -456,25 +458,25 @@ class QuickplaceSelectionSingleFollower():
 
     @mayaUtils.undo_chunk()
     def __call__(self):
-        messages = ["# quickplace_selection_multiple_masters() - "]
+        messages=["# quickplace_selection_multiple_masters() - "]
         # Get selection
-        selectionList = cmds.ls(sl = True,
-                                objectsOnly = True,
-                                exactType = 'transform')
+        selectionList=cmds.ls(sl=True,
+                                objectsOnly=True,
+                                exactType='transform')
         # Checks
         if len(selectionList) < 2:
             messages.append("not enough objects selected.")
             raise ValueError(''.join(messages))
 
         # Get masters and follower
-        masters = selectionList[0:-1]
-        follower = selectionList[-1]
+        masters=selectionList[0:-1]
+        follower=selectionList[-1]
 
         # Place and leave masters selected
         constraints.quickplace(masters=masters,
                             followers=follower,
                             channels=['translate', 'rotate'])
-        cmds.select(masters, r = True)
+        cmds.select(masters, r=True)
         return
     #
 

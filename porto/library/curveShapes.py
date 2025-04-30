@@ -1,18 +1,21 @@
-"""Module holding data that can be used for creating specific controller shapes:
-point coordinates, shape names, categories...
+"""Module holding classes and functions that customize the shape, color or
+line width of curves.
 
 The coordinates of shapes do not go beyond -1 or 1 in any axis.
 """
 
 from collections import OrderedDict
+from functools import partial
 
 from maya import cmds
+import maya.utils as mutils
 
 from library import mayaUtils
 from library import utils
 
+
 class ShapesCoords():
-    """Hold the coordinates required to draw different shapes of curves."""
+    """Hold the data required to draw different shapes of curves."""
 
     def __init__(self):
         self.flat_coords_dict=self.define_flat_coords()
@@ -193,6 +196,292 @@ class ShapesCoords():
     #
 
 
+class ShapesColor():
+    """Holds the data required to change the color override of curves' Shapes."""
+
+    def __init__(self):
+        self.mayaColorIndex={
+            0:[120,120,120],
+            1:[0,0,0],
+            2:[64,64,64],
+            3:[153,153,153],
+            4:[155,0,40],
+            5:[0,4,96],
+            6:[0,0,255],
+            7:[0,70,25],
+            8:[38,0,67],
+            9:[200,0,200],
+            10:[138,72,51],
+            11:[63,35,31],
+            12:[153,38,0],
+            13:[255,0,0],
+            14:[0,255,0],
+            15:[0,65,153],
+            16:[255,255,255],
+            17:[255,255,0],
+            18:[100,220,255],
+            19:[67,255,163],
+            20:[255,176,176],
+            21:[228,172,121],
+            22:[255,255,199],
+            23:[0,153,84],
+            24:[161,106,48],
+            25:[158,161,48],
+            26:[104,161,48],
+            27:[48,161,93],
+            28:[48,161,161],
+            29:[48,103,161],
+            30:[111,48,161],
+            31:[161,48,106],
+        }
+        return
+    
+    def reset_color_override_attribute(node):
+        """Disable and clean all colorOverride attributes."""
+        cmds.setAttr('{node}.overrideEnabled'.format(node=node), False)
+        cmds.setAttr('{node}.overrideColor'.format(node=node), 0)
+        cmds.setAttr('{node}.overrideRGBColors'.format(node=node), False)
+        cmds.setAttr('{node}.overrideColorRGB'.format(node=node), 0, 0, 0)
+        return
+    
+    def set_custom_override_color(self, targets_list, rgbValues, *_):
+        """Set a custom override color for the selection.
+            Args:
+                - targets_list: list of str.
+                    Objects whose overrideColor attributes must be changed.
+                - rgbValues: list of three float.
+                    Floats min value: 0
+                    Floats max value: 1
+        """
+        for target in targets_list:
+            # Activate override
+            cmds.setAttr('{target}.overrideEnabled'.format(target=target), True)
+            cmds.setAttr('{target}.overrideRGBColors'.format(target=target), True)
+
+            # Override with custom color
+            cmds.setAttr('{target}.overrideColorRGB'.format(target=target), *rgbValues)
+        return
+    
+    def set_index_override_color(self, targets_list, colorIndex, *_):
+        """Set an index override color for the selection.
+            Args:
+                - targets_list: list of str.
+                    Objects whose overrideColor attributes must be changed.
+                - colorIndex: int.
+        """
+        for target in targets_list:
+            # Activate override
+            cmds.setAttr('{target}.overrideEnabled'.format(target=target), True)
+            cmds.setAttr('{target}.overrideRGBColors'.format(target=target), False)
+
+            # Override with index
+            cmds.setAttr('{target}.overrideColor'.format(target=target), colorIndex)
+        return
+    #
+
+
+class ColorChangerUI(ShapesColor):
+    """Interface. Change the override color attribute for the selected elements."""
+
+    def __init__(self):
+        ShapesColor.__init__(self)
+        self.windowName="colorChanger"
+
+        # Controllers are created and assigned later
+        self.applyToShapesController=''
+        self.customColorCanvas=''
+        self.colorIndexControllers=[]
+        self.hueSliderControllers=[]
+        self.resetOverridesController=''
+
+        # Create window
+        if cmds.window(self.windowName, query=True, exists=True):
+            cmds.deleteUI(self.windowName)
+        cmds.window(self.windowName, title="Color Changer")
+        cmds.window(self.windowName, edit=True, width=300, height=253)
+        return
+    
+    def populate(self):
+        """Create the contents of the window."""
+        mainLayout=cmds.columnLayout(
+            adjustableColumn=True,
+            rowSpacing=5,
+            columnOffset=['both', 2],
+            columnAlign='left',
+        )
+        cmds.separator(style='none', h=5)
+
+        cmds.columnLayout(
+            adjustableColumn=True,
+            columnOffset=['left', 8],
+            columnAlign='left',
+        )
+        
+        # Description
+        cmds.text(label="Change the overrideColor attribute of selected objects.")
+        cmds.separator(style='none', h=5)
+
+        # Create controller: applyToShapesController
+        self.applyToShapesController=cmds.checkBox(label='Apply to Shapes', value=True)
+
+        cmds.setParent(mainLayout)
+        cmds.separator(style='in', h=2)
+
+        # Tabs: color index & custom color
+        tabs=cmds.tabLayout()
+
+        colorIndexTab=cmds.columnLayout(
+            adjustableColumn=True,
+            columnOffset=['both', 10],
+            columnAlign='center',
+            parent=tabs,
+        )
+        customColorTab=cmds.columnLayout(
+            adjustableColumn=True,
+            columnAlign='center',
+            parent=tabs,
+        )
+
+        cmds.tabLayout(
+            tabs,
+            edit=True,
+            tabLabel=(
+                (colorIndexTab, "Color index"),
+                (customColorTab, "Custom color"),
+            ),
+        )
+        
+        # Fill colorIndexTab
+        cmds.setParent(colorIndexTab)
+        cmds.separator(style='none', h=10)
+        cmds.gridLayout(numberOfRows=4, numberOfColumns=8, cellWidthHeight=(42,30))
+
+        # Create controllers: colorIndexButtons
+        for index in range(0,32):
+            # Get button background colors
+            '''RGB color values must be in the [0.0; 1.0] range instead of [0; 255].'''
+            backgroundColors=[
+                utils.normalise_color_value(value)
+                for value in self.colorIndex[index]
+            ]
+            # Create button and append to list
+            indexButton=cmds.button(label=str(index), backgroundColor=backgroundColors)
+            self.colorIndexControllers.append(indexButton)
+
+        cmds.separator(style='none', h=5, parent=colorIndexTab)
+
+        # Fill custom color tab
+        cmds.setParent(customColorTab)
+        cmds.separator(style='none', h=30)
+        cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnAttach=(1, 'both', 10))
+
+        self.customColorCanvas=cmds.canvas(rgbValue=(0, 0, 0), width=60, height=60)
+
+        # Create controllers: hueSliders
+        cmds.rowColumnLayout(numberOfColumns=2, adjustableColumn=2, columnAttach=(1, 'right', 10))
+        for hue in ['R','G','B']:
+            cmds.text(hue, font='boldLabelFont', h=20)
+            hueSlider=cmds.intSliderGrp(field=True, min=0, max=255, value=0, step=1)
+            self.hueSliderControllers.append(hueSlider)
+        
+        # Create controller: resetOverridesController
+        cmds.setParent(mainLayout)
+        self.resetOverridesController=cmds.button(label='Reset Override', width=120)
+        return
+    
+    def build_and_show(self):
+        """Build the interface and show the window."""
+        # Populate window
+        self.populate()
+
+        # Assign commands
+        cmds.button(
+            self.resetOverridesController,
+            edit=True,
+            command=self.reset_color_override_for_selection,
+        )
+
+        for hueSlider in self.hueSliderControllers:
+            cmds.intSliderGrp(hueSlider, edit=True,
+                              changeCommand=self.apply_hue_sliders_values)
+
+        for index in range(0,32): # TODO attr/var holding button amount to use as max range
+            cmds.button(self.colorIndexControllers[index], edit=True,
+                        command=partial(self.apply_color_index_values,index))
+        # Show window
+        cmds.showWindow(self.windowName)
+        return
+    
+    def apply_color_index_values(self, colorIndex, *_):
+        """Apply the chosen color index value to the selection."""
+        self.set_index_override_color(
+            targets_list=self.get_objects_to_work_on(),
+            colorIndex=colorIndex,
+        )
+        mutils.processIdleEvents()
+        return
+
+    def apply_hue_sliders_values(self, *_):
+        """Get the current hue slider values. Use them to update the color of
+        the customColorCanvas and the colorOverride of the selected objects."""
+        rgbValues=[]
+        for hueSlider in self.hueSliderControllers:
+            value=cmds.intSliderGrp(hueSlider, query=True, value=True)
+            rgbValues.append(utils.normalise_color_value(value))
+
+        # Apply RGB values
+        self.update_canvas(rgbValues)
+        self.set_custom_override_color(targets_list=self.get_objects_to_work_on(),
+                                       rgbValues=rgbValues)
+        mutils.processIdleEvents()
+        return
+    
+    def get_objects_to_work_on(self):
+        """Return a list of objects to work on. Based on user's selection and
+        the current value of applyToShapesController.
+        """
+        # Get current selection
+        selection=cmds.ls(sl=True)
+        # Filter selection: remove objects without an overrideColor
+        filtered_list=[
+            selected
+            for selected in selection
+            if cmds.attributeQuery('overrideEnabled', n=selected, exists=True)
+        ]
+
+        applyToShapes=cmds.checkBox(self.applyToShapesController, query=True, value=True)
+        if not applyToShapes:
+            return filtered_list
+        
+        # ApplyToShapes behaviour requested: build list of shapes to work on
+        shapes=[]
+        for filtered in filtered_list:
+            if 'shape' in cmds.nodeType(filtered, inherited=True):
+                # Object itself is a shape
+                shapes.append(filtered)
+                continue
+            shapes+=mayaUtils.list_shapes_under_transform(filtered)
+        return shapes
+
+    def reset_color_override_for_selection(self, *_):
+        """Disable all overrideColor attributes for the selection."""
+        for object_to_work_on in self.get_objects_to_work_on():
+            self.reset_color_override_attribute(object_to_work_on)
+        return
+    
+    def update_canvas(self, rgb, *_):
+        """Update the color of the canvas with the given rgb values.
+            Args:
+                - rgb: list of three float.
+                    Floats min value: 0
+                    Floats max value: 1
+        """
+        cmds.canvas(self.customColorCanvas, edit=True, rgbValue=rgb)
+        return
+
+    #
+
+
 def switch_line_width(target_shape):
     """Change the width attribute of target_shape to make it thicker or thinner.
     
@@ -204,26 +493,6 @@ def switch_line_width(target_shape):
     cmds.setAttr(target_shape+'.lineWidth', new_width)
     return
 
-
-def set_override_color(objectName, colorIndex):
-    """Set the overrideColor attribute of the object to the given color index.
-
-        Args:
-            - objectName: str.
-            - colorIndex: int.
-    """
-    cmds.setAttr(objectName + 'Shape.overrideEnabled', 1)
-    cmds.setAttr(objectName + 'Shape.overrideColor', colorIndex)
-    return
-
-
-def reset_color_override_attribute(node):
-    """Disable and clean all colorOverride attributes."""
-    cmds.setAttr('{node}.overrideEnabled'.format(node=node), False)
-    cmds.setAttr('{node}.overrideColor'.format(node=node), 0)
-    cmds.setAttr('{node}.overrideRGBColors'.format(node=node), False)
-    cmds.setAttr('{node}.overrideColorRGB'.format(node=node), 0, 0, 0)
-    return
 
 
 
