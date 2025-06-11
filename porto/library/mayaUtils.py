@@ -81,43 +81,6 @@ class apply_to_relative_selected_shapes(object):
     #
 
 
-def insert_parent(target, group_name):
-    """Create a group and gives it the coordinates of the target. The target
-    will then be parented under that group.
-
-        Args:
-            - targetName: str.
-                Name of the node that needs to be parented.
-            - groupName: str.
-                Name of the group that will be created.
-    """
-    cmds.createNode('transform', n=group_name)
-
-    # Sets coordinates
-    for axis in ['X', 'Y', 'Z']:
-        for channel in ['translate', 'rotate', 'scale']:
-            group_attribute='{group_name}.{channel}{axis}'.format(
-                group_name=group_name,
-                channel=channel,
-                axis=axis,
-            )
-            target_attribute='{target}.{channel}{axis}'.format(
-                target=target,
-                channel=channel,
-                axis=axis,
-            )
-            cmds.setAttr(group_attribute, cmds.getAttr(target_attribute))
-    
-    # Parent
-    current_parent=cmds.listRelatives(target, parent=True)
-    if current_parent==None or current_parent==[]:
-        cmds.parent(target, group_name)
-    else:
-        cmds.parent(group_name, current_parent)
-        cmds.parent(target, group_name)
-    return
-
-
 def break_incoming_connection(attributeFullpath):
     """Break any incoming connection to an attribute.
     
@@ -501,6 +464,43 @@ def hide_shapes_from_history(node_name):
     shapes=cmds.listRelatives(node_name, s=True)
     for shape in shapes:
         cmds.setAttr(shape+'.isHistoricallyInteresting', False)
+    return
+
+
+def insert_parent(target, group_name):
+    """Create a group and gives it the coordinates of the target. The target
+    will then be parented under that group.
+
+        Args:
+            - targetName: str.
+                Name of the node that needs to be parented.
+            - groupName: str.
+                Name of the group that will be created.
+    """
+    cmds.createNode('transform', n=group_name)
+
+    # Sets coordinates
+    for axis in ['X', 'Y', 'Z']:
+        for channel in ['translate', 'rotate', 'scale']:
+            group_attribute='{group_name}.{channel}{axis}'.format(
+                group_name=group_name,
+                channel=channel,
+                axis=axis,
+            )
+            target_attribute='{target}.{channel}{axis}'.format(
+                target=target,
+                channel=channel,
+                axis=axis,
+            )
+            cmds.setAttr(group_attribute, cmds.getAttr(target_attribute))
+    
+    # Parent
+    current_parent=cmds.listRelatives(target, parent=True)
+    if current_parent==None or current_parent==[]:
+        cmds.parent(target, group_name)
+    else:
+        cmds.parent(group_name, current_parent)
+        cmds.parent(target, group_name)
     return
 
 
