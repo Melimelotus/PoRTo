@@ -397,21 +397,39 @@ class ShapesChangerUI(ShapesCoords): # TODO
         tabs=cmds.tabLayout()
         self.categoryTabs={}
         for shapeCategory in self.shape_types_list:
-            # Build label
-            label=naming.add_whitespace_before_caps(shapeCategory)
-            label=naming.capitalize_respectfully(label)
+            # Build label, ensure first letter is uppercase
+            raw_label=utils.insert_whitespace_before_upper_letters(shapeCategory)
+            label=raw_label[0].upper() + raw_label[1:]
 
             # Create tab
-            newTab=cmds.columnLayout(adjustableColumn=True,
-                                     columnAlign='center',
-                                     parent=tabs)
-            cmds.tabLayout(tabs, edit=True,
-                           tabLabel=(newTab, label))
+            newTab=cmds.columnLayout(
+                adjustableColumn=True,
+                columnAlign='center',
+                parent=tabs,
+            )
+            cmds.tabLayout(
+                tabs,
+                edit=True,
+                tabLabel=(newTab, label),
+            )
             self.categoryTabs[shapeCategory]=newTab
 
         # Fill tabs
-        tabShapes=curveShapes.define_categories()
-        tabShapes['all']=curveShapes.list_shapes_in_categories()
+        tabShapes={}
+
+        tabShapes['all']=[
+            shape_name
+            for shape_name in ShapesCoords().merged_coords_dict.keys()
+        ]
+
+        sorted_coords_dict=ShapesCoords().sorted_by_types_coords_dict
+        for shape_category, shapes_data in sorted_coords_dict.items():
+            shape_names=[
+                key
+                for key in shapes_data
+            ]
+            tabShapes[shape_category]=shape_names
+
 
         for tabKey, tab in self.categoryTabs.items():
             cmds.setParent(tab)
@@ -419,9 +437,11 @@ class ShapesChangerUI(ShapesCoords): # TODO
             cmds.scrollLayout()
             cmds.columnLayout()
             cmds.separator(style='none', h=5)
-            grid=cmds.rowColumnLayout(numberOfColumns=3,
-                                      columnWidth=[(1, 120), (2, 120), (3, 120)],
-                                      columnAttach=[1, 'left', 0])
+            grid=cmds.rowColumnLayout(
+                numberOfColumns=3,
+                columnWidth=[(1, 120), (2, 120), (3, 120)],
+                columnAttach=[1, 'left', 0],
+            )
             
             # Create symbolButtons: buttons with images
             for shape in tabShapes[tabKey]:
@@ -431,11 +451,15 @@ class ShapesChangerUI(ShapesCoords): # TODO
                     shape=shape)
                 
                 # Build layout and controller
-                cmds.columnLayout(columnAttach=['both', 5],
-                                  columnWidth=120)
-                shapeController=cmds.symbolButton(width=75,
-                                                  height=75,
-                                                  image=imagePath)
+                cmds.columnLayout(
+                    columnAttach=['both', 5],
+                    columnWidth=120,
+                )
+                shapeController=cmds.symbolButton(
+                    width=75,
+                    height=75,
+                    image=imagePath,
+                )
                 cmds.separator(style='none', h=5)
                 cmds.text(label=shape)
                 cmds.separator(style='none', h=10)
