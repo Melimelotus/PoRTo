@@ -199,7 +199,7 @@ class ShapesCoords():
     #
 
 
-class ShapesChangerUI(ShapesCoords):
+class ShapesChangerUI(ShapesCoords): # TODO
     """Interface. Change the curve shape under selected objects."""
 
     def __init__(self):
@@ -229,7 +229,9 @@ class ShapesChangerUI(ShapesCoords):
         """Build the path leading to the directory that holds all icons."""
         library_dirname=os.path.dirname(__file__)
         porto_dirname=os.path.dirname(library_dirname)
-        return '{porto_dirname}/icons/curveShapes'.format(portoDporto_dirnameir=porto_dirname)
+        print(library_dirname)
+        print(porto_dirname)
+        return '{porto_dirname}/icons/curveShapes'.format(porto_dirname=porto_dirname)
     
     '''
     def apply_curve_creation_parameters(self, curve_name, *_):

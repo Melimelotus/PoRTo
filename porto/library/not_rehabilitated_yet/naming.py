@@ -22,16 +22,6 @@ def all_suffixes():
     return allSuffixes
 
 
-# TODO rename. Not descriptive enough
-def capitalize_respectfully(string):
-    """Capitalize the first character of a string without changing the case of the
-    other characters."""
-    capitalized = [string[i].upper() if i == 0
-                   else string[i]
-                   for i in range(0, len(string))]
-    return ''.join(capitalized)
-
-
 def camel_case_and_combine(strings):
     """Combine a list of strings into a single string. Capitalize the first
     letter of all appended strings to create camelCase.
@@ -54,20 +44,6 @@ def camel_case_and_combine(strings):
             
     return newString
 
-
-def add_whitespace_before_caps(string):
-    """Add a whitespace before all capitalized letters in the string."""
-    # Build list of all letters in the alphabet, uppercase
-    startIndex=ord('a')
-    uppercaseLetters = [chr(index + startIndex).upper()
-                        for index in range(26)]
-    
-    # Study each letter in the string. Add whitespace if necessary
-    rebuild=[' {letter}'.format(letter=letter) if letter in uppercaseLetters
-             else letter
-             for letter in string]
-
-    return ''.join(rebuild)
 
 def condense_porto_name(string):
     """Condense a PoRTo name into {side}_{name}{Detail}{Suffix}. Add camel case.

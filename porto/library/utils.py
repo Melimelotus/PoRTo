@@ -147,6 +147,24 @@ def get_padded_increment(number, padding):
     return padded
 
 
+def insert_whitespace_before_upper_letters(string):
+    """Insert a whitespace before all uppercase letters in the string."""
+    # Build list of all letters in the alphabet, uppercase
+    upper_letters_list=[
+        chr(ord('a')+index).upper()
+        for index in range(26)
+    ]
+
+    # Rebuild string with whitespaces
+    rebuilt_string=[
+        character if not character in upper_letters_list
+        else ' {character}'.format(character=character)
+        for character in string
+    ]
+
+    return ''.join(rebuilt_string)
+
+
 def makelist(arg):
     """Append the argument to a list if it was not already a list."""
     return [arg] if not isinstance(arg, list) else arg
