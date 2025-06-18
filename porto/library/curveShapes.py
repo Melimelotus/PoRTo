@@ -13,8 +13,6 @@ import maya.utils as mutils
 
 from library import mayaUtils
 from library import utils
-# from library import controllers
-# from library import naming
 
 
 class ShapesCoords():
@@ -231,6 +229,30 @@ class ShapeChangerUI(ShapesCoords): # TODO
         library_dirname=os.path.dirname(__file__)
         porto_dirname=os.path.dirname(library_dirname)
         return '{porto_dirname}/icons/curves'.format(porto_dirname=porto_dirname)
+    
+    def change_shape(self, shape_name):
+        """Change the shape of the selected objects."""
+        # Get necessary data
+        selection_list=cmds.ls(sl=True, exactType='transform')
+        linear=True
+        preserve_existing_shapes=False
+
+        # Apply to selection
+        for selected in selection_list:
+            if not preserve_existing_shapes:
+                self.draw_shape(
+                    curve_name=selected,
+                    curve_coords=self.merged_coords_dict[shape_name],
+                    linear = linear,
+                )
+            else:
+                self.add_shape(
+                    curve_name=selected,
+                    curve_coords=self.merged_coords_dict[shape_name],
+                    linear = linear,
+                )
+
+        return
     
     '''
     def apply_curve_creation_parameters(self, curve_name, *_):
