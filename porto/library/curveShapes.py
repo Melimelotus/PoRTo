@@ -199,18 +199,19 @@ class ShapesCoords():
     #
 
 
-class ShapesChangerUI(ShapesCoords): # TODO
-    """Interface. Change the curve shape under selected objects."""
+class ShapeChangerUI(ShapesCoords): # TODO
+    """Interface. Change the curve shape of selected objects."""
 
     def __init__(self):
         ShapesCoords.__init__(self)
-        self.window_name="curveShapeSelector"
+        self.window_name='shapeChanger'
+        self.title="Shape Changer"
 
         self.shape_types_list=['all']
         for shape_type in self.sorted_by_types_coords_dict.keys():
             self.shape_types_list.append(shape_type)
         
-        self.iconsPath=self.build_icons_path()
+        self.icons_path=self.build_icons_path()
         
         # Controllers are created and assigned later
         self.degreeControllersCollection=''
@@ -221,17 +222,15 @@ class ShapesChangerUI(ShapesCoords): # TODO
         # Create window
         if cmds.window(self.window_name, query=True, exists=True):
             cmds.deleteUI(self.window_name)
-        cmds.window(self.window_name, title="Curve Shape Selection",)
+        cmds.window(self.window_name, title=self.title)
         cmds.window(self.window_name, edit=True, width=400, height=350)
         return
     
     def build_icons_path(self):
-        """Build the path leading to the directory that holds all icons."""
+        """Build and return the path to the curve icons directory."""
         library_dirname=os.path.dirname(__file__)
         porto_dirname=os.path.dirname(library_dirname)
-        print(library_dirname)
-        print(porto_dirname)
-        return '{porto_dirname}/icons/curveShapes'.format(porto_dirname=porto_dirname)
+        return '{porto_dirname}/icons/curves'.format(porto_dirname=porto_dirname)
     
     '''
     def apply_curve_creation_parameters(self, curve_name, *_):
@@ -419,10 +418,10 @@ class ShapesChangerUI(ShapesCoords): # TODO
 
         tabShapes['all']=[
             shape_name
-            for shape_name in ShapesCoords().merged_coords_dict.keys()
+            for shape_name in self.merged_coords_dict.keys()
         ]
 
-        sorted_coords_dict=ShapesCoords().sorted_by_types_coords_dict
+        sorted_coords_dict=self.sorted_by_types_coords_dict
         for shape_category, shapes_data in sorted_coords_dict.items():
             shape_names=[
                 key
@@ -446,8 +445,8 @@ class ShapesChangerUI(ShapesCoords): # TODO
             # Create symbolButtons: buttons with images
             for shape in tabShapes[tabKey]:
                 # Build path towards the icon for the given shape
-                imagePath='{iconsPath}/{shape}.png'.format(
-                    iconsPath=self.iconsPath,
+                image_path='{icons_path}/{shape}.png'.format(
+                    icons_path=self.icons_path,
                     shape=shape)
                 
                 # Build layout and controller
@@ -458,7 +457,7 @@ class ShapesChangerUI(ShapesCoords): # TODO
                 shapeController=cmds.symbolButton(
                     width=75,
                     height=75,
-                    image=imagePath,
+                    image=image_path,
                 )
                 cmds.separator(style='none', h=5)
                 cmds.text(label=shape)
