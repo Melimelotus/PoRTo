@@ -197,7 +197,7 @@ class ShapesCoords():
     #
 
 
-class ShapeChangerUI(ShapesCoords): # TODO
+class ShapeChangerUI(ShapesCoords):
     """Interface. Change the curve shape of selected objects."""
 
     def __init__(self):
@@ -212,10 +212,10 @@ class ShapeChangerUI(ShapesCoords): # TODO
         self.icons_path=self.build_icons_path()
         
         # Controllers are created and assigned later
-        self.degreeControllersCollection=''
-        self.degreeControllers=[]
-        self.preserveShapesController=''
-        self.shapeControllers={}
+        self.degree_controllers_collection=''
+        self.degree_controllers_list=[]
+        self.preserve_shapes_controller=''
+        self.shape_controllers_dict={}
 
         # Create window
         if cmds.window(self.window_name, query=True, exists=True):
@@ -230,77 +230,44 @@ class ShapeChangerUI(ShapesCoords): # TODO
         porto_dirname=os.path.dirname(library_dirname)
         return '{porto_dirname}/icons/curves'.format(porto_dirname=porto_dirname)
     
-    def change_shape(self, shape_name):
+    def change_shape(self, shape_name, *_):
         """Change the shape of the selected objects."""
-        # Get necessary data
+        # Get selection
         selection_list=cmds.ls(sl=True, exactType='transform')
-        linear=True
-        preserve_existing_shapes=False
 
-        # Apply to selection
+        # Get degree
+        selected_degree_button=cmds.radioCollection(
+            self.degree_controllers_collection,
+            query=True,
+            select=True,
+        )
+        degree_button_label=cmds.radioButton(
+            selected_degree_button,
+            query=True,
+            label=True,
+        )
+        make_linear=degree_button_label=="Linear"
+
+        # Get behaviour
+        preserve_existing_shapes=cmds.checkBox(
+            self.preserve_shapes_controller,
+            query=True,
+            value=True,
+        )
+
+        # Apply
+        func_to_apply_dict={
+            True: self.add_shape,
+            False: self.replace_shape,
+        }
         for selected in selection_list:
-            if not preserve_existing_shapes:
-                self.draw_shape(
-                    curve_name=selected,
-                    curve_coords=self.merged_coords_dict[shape_name],
-                    linear = linear,
+            with mayaUtils.preserve_selection():
+                func_to_apply_dict[preserve_existing_shapes](
+                    target=selected,
+                    curve_name=shape_name,
+                    linear=make_linear,
                 )
-            else:
-                self.add_shape(
-                    curve_name=selected,
-                    curve_coords=self.merged_coords_dict[shape_name],
-                    linear = linear,
-                )
-
         return
-    
-    '''
-    def apply_curve_creation_parameters(self, curve_name, *_):
-        """Change the shape of selected curves or create a new curve if nothing
-        is selected."""
-        linear=True #TODO : GET DEGREE
-
-        # Get and study selection
-        selectedObjects=cmds.ls(sl=True, exactType='transform')
-        validSelection=False
-
-        for selected in selectedObjects:
-            # List shapes under selected
-            childrenShapes=cmds.listRelatives(selected, shapes=True)
-            # Filter and keep only nurbsCurves
-            nurbsCurves=[childShape
-                         for childShape in childrenShapes
-                         if cmds.objectType(childShape)=='nurbsCurve']
-            
-            if not nurbsCurves:
-                continue
-
-            validSelection=True
-            # Selection holds nurbsCurves: add or replace a shape to them.
-            replaceBehaviour=False #TODO: GET BEHAVIOUR
-
-            if replaceBehaviour:
-                # TODO
-                # delete all shapes
-                # create new shape and parent to transform
-                # delete created transform
-                pass
-            else:
-                # TODO
-                # create shape
-                # parent to transform
-                # delete created transform
-                pass
-
-        if not validSelection:
-            # Invalid selection: create a new curve.
-            self.draw_shape(
-                curve_name=curve_name,
-                curve_coords=self.merged_coords_dict[curve_name],
-                linear=linear,
-            )
-        return
-    '''
 
     def populate(self):
         """Create the contents of the window.
@@ -383,11 +350,19 @@ class ShapeChangerUI(ShapesCoords): # TODO
             adjustableColumn=4,
             columnWidth=([2, 38],),
         )
-        self.degreeControllersCollection=cmds.radioCollection()
-        self.degreeControllers.append(cmds.radioButton(label="Linear", select=True))
-        cmds.separator(style='none')
-        self.degreeControllers.append(cmds.radioButton(label="Cubic"))
-        cmds.separator(style='none')
+        self.degree_controllers_collection=cmds.radioCollection()
+        degrees=["Linear", "Cubic"]
+        for degree in degrees:
+            new_button=cmds.radioButton(label=degree)
+            self.degree_controllers_list.append(new_button)
+            cmds.separator(style='none')
+            # Select linear button by default
+            if degree=="Linear":
+                cmds.radioButton(
+                    new_button,
+                    edit=True,
+                    select=True)
+            #
 
         cmds.setParent(frameColumn)
         cmds.separator(style='none', h=3)
@@ -406,7 +381,7 @@ class ShapeChangerUI(ShapesCoords): # TODO
             adjustableColumn=3,
             columnAttach=([2, 'left', 5]),
         )
-        self.preserveShapesController=cmds.checkBox(label='', value=False)
+        self.preserve_shapes_controller=cmds.checkBox(label='', value=False)
         cmds.text(label="Preserve existing shapes")
         cmds.separator(style='none')
 
@@ -487,7 +462,7 @@ class ShapeChangerUI(ShapesCoords): # TODO
                 cmds.setParent(grid)
 
                 # Update dictionary
-                self.shapeControllers[shapeController]=shape
+                self.shape_controllers_dict[shapeController]=shape
         return
     
     def build_and_show(self):
@@ -496,15 +471,12 @@ class ShapeChangerUI(ShapesCoords): # TODO
         self.populate()
 
         # Assign commands
-        '''for shapeController, shape in self.shapeControllers.items():
-            # TODO
-            #cmds.symbolButton(shapeController, edit=True, command='print("hello")')
+        for shape_controller, shape_name in self.shape_controllers_dict.items():
             cmds.symbolButton(
-                shapeController,
+                shape_controller,
                 edit=True,
-                command=partial(self.apply_curve_creation_parameters, shape)
+                command=partial(self.change_shape, shape_name),
             )
-        '''
 
         # Show window
         cmds.showWindow(self.window_name)
@@ -675,7 +647,7 @@ class ColorChangerUI(ShapesColor):
         # Create controllers: colorIndexButtons
         for index in range(0,32):
             # Get button background colors
-            '''RGB color values must be in the [0.0; 1.0] range instead of [0; 255].'''
+            '''Range of RGB color values must be [0.0;1.0] instead of [0;255].'''
             backgroundColors=[
                 utils.normalise_color_value(value)
                 for value in self.mayaColorIndex[index]

@@ -81,6 +81,27 @@ class apply_to_relative_selected_shapes(object):
     #
 
 
+class preserve_selection(object):
+    """Decorator. Save a list of the selected objects and try to select them
+    again after executing the decorated function."""
+
+    def __enter__(self):
+        self.original_selection_list=cmds.ls(sl=True)
+        return
+    
+    def __exit__(self, *args):
+        cmds.select(clear=True)
+        for previously_selected in self.original_selection_list:
+            if cmds.objExists(previously_selected):
+                cmds.select(previously_selected, add=True)
+        return
+
+    def __call__(self, func):
+        def wrapper(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+        return wrapper
+
 def break_incoming_connection(attributeFullpath):
     """Break any incoming connection to an attribute.
     
