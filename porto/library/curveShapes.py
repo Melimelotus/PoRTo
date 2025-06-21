@@ -485,7 +485,7 @@ class ShapeChangerUI(ShapesCoords):
 
 
 class ShapesColor():
-    """Holds the data required to change the color override of curves' Shapes."""
+    """Holds the data required to change the color override of Shapes."""
 
     def __init__(self):
         self.mayaColorIndex={
@@ -576,11 +576,11 @@ class ColorChangerUI(ShapesColor):
         self.window_name="colorChanger"
 
         # Controllers are created and assigned later
-        self.applyToShapesController=''
-        self.customColorCanvas=''
-        self.colorIndexControllers=[]
-        self.hueSliderControllers=[]
-        self.resetOverridesController=''
+        self.apply_to_shapes_controller=''
+        self.custom_color_canvas=''
+        self.color_index_controllers_list=[]
+        self.hue_slider_controllers_list=[]
+        self.reset_overrides_controller=''
 
         # Create window
         if cmds.window(self.window_name, query=True, exists=True):
@@ -610,7 +610,7 @@ class ColorChangerUI(ShapesColor):
         cmds.separator(style='none', h=5)
 
         # Create controller: applyToShapesController
-        self.applyToShapesController=cmds.checkBox(label='Apply to Shapes', value=True)
+        self.apply_to_shapes_controller=cmds.checkBox(label='Apply to Shapes', value=True)
 
         cmds.setParent(mainLayout)
         cmds.separator(style='in', h=2)
@@ -654,7 +654,7 @@ class ColorChangerUI(ShapesColor):
             ]
             # Create button and append to list
             indexButton=cmds.button(label=str(index), backgroundColor=backgroundColors)
-            self.colorIndexControllers.append(indexButton)
+            self.color_index_controllers_list.append(indexButton)
 
         cmds.separator(style='none', h=5, parent=colorIndexTab)
 
@@ -663,18 +663,18 @@ class ColorChangerUI(ShapesColor):
         cmds.separator(style='none', h=30)
         cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnAttach=(1, 'both', 10))
 
-        self.customColorCanvas=cmds.canvas(rgbValue=(0, 0, 0), width=60, height=60)
+        self.custom_color_canvas=cmds.canvas(rgbValue=(0, 0, 0), width=60, height=60)
 
         # Create controllers: hueSliders
         cmds.rowColumnLayout(numberOfColumns=2, adjustableColumn=2, columnAttach=(1, 'right', 10))
         for hue in ['R','G','B']:
             cmds.text(hue, font='boldLabelFont', h=20)
             hueSlider=cmds.intSliderGrp(field=True, min=0, max=255, value=0, step=1)
-            self.hueSliderControllers.append(hueSlider)
+            self.hue_slider_controllers_list.append(hueSlider)
         
         # Create controller: resetOverridesController
         cmds.setParent(mainLayout)
-        self.resetOverridesController=cmds.button(label='Reset Override', width=120)
+        self.reset_overrides_controller=cmds.button(label='Reset Override', width=120)
         return
     
     def build_and_show(self):
@@ -684,18 +684,18 @@ class ColorChangerUI(ShapesColor):
 
         # Assign commands
         cmds.button(
-            self.resetOverridesController,
+            self.reset_overrides_controller,
             edit=True,
             command=self.reset_color_override_for_selection,
         )
 
-        for hueSlider in self.hueSliderControllers:
+        for hueSlider in self.hue_slider_controllers_list:
             cmds.intSliderGrp(hueSlider, edit=True,
                               changeCommand=self.apply_hue_sliders_values)
 
         for index in range(0,32): # TODO attr/var holding button amount to use as max range
             cmds.button(
-                self.colorIndexControllers[index], edit=True,
+                self.color_index_controllers_list[index], edit=True,
                 command=partial(self.apply_color_index_values, index),
             )
         # Show window
@@ -715,7 +715,7 @@ class ColorChangerUI(ShapesColor):
         """Get the current hue slider values. Use them to update the color of
         the customColorCanvas and the colorOverride of the selected objects."""
         rgbValues=[]
-        for hueSlider in self.hueSliderControllers:
+        for hueSlider in self.hue_slider_controllers_list:
             value=cmds.intSliderGrp(hueSlider, query=True, value=True)
             rgbValues.append(utils.normalise_color_value(value))
 
@@ -739,7 +739,7 @@ class ColorChangerUI(ShapesColor):
             if cmds.attributeQuery('overrideEnabled', n=selected, exists=True)
         ]
 
-        applyToShapes=cmds.checkBox(self.applyToShapesController, query=True, value=True)
+        applyToShapes=cmds.checkBox(self.apply_to_shapes_controller, query=True, value=True)
         if not applyToShapes:
             return filtered_list
         
@@ -766,7 +766,7 @@ class ColorChangerUI(ShapesColor):
                     Floats min value: 0
                     Floats max value: 1
         """
-        cmds.canvas(self.customColorCanvas, edit=True, rgbValue=rgb)
+        cmds.canvas(self.custom_color_canvas, edit=True, rgbValue=rgb)
         return
 
     #
@@ -780,7 +780,10 @@ def switch_line_width(target_shape):
     """
     current_width=cmds.getAttr(target_shape+'.lineWidth')
     new_width=1 if current_width >= 2 else 2
-    cmds.setAttr(target_shape+'.lineWidth', new_width)
+    cmds.setAttr(
+        target_shape+'.lineWidth',
+        new_width,
+    )
     return
 
 #
