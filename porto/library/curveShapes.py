@@ -319,7 +319,7 @@ class ShapeChangerUI(ShapesCoords):
             adjustableColumn=2,
             columnAttach=([1, 'left', 0]),
         )
-        cmds.text("Change the shape of selected curves or create a new curve.")
+        cmds.text("Change the shape of the selected objects.")
         cmds.separator(style='none')
 
         cmds.setParent(mainLayout)
