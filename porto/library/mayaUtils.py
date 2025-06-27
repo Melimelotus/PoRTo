@@ -11,9 +11,10 @@ from maya.api import OpenMaya # API 2.0
 from library import utils
 
 
-class preserve_selection(object):
-    """Decorator. Save a list of the selected objects and try to select them
-    again after executing the decorated function."""
+# Decorators
+class SelectionPreservation(object):
+    """Decorator and context manager. Save a list of the selected objects and
+    try to select them again after executing the decorated function."""
 
     def __enter__(self):
         self.original_selection_list=cmds.ls(sl=True)
@@ -33,7 +34,7 @@ class preserve_selection(object):
         return wrapper
     
 
-class undo_chunk(object):
+class UndoChunk(object):
     """Decorator and context manager. Ensure an undoChunk is opened and then
     closed, even if the function being decorated fails."""
 
@@ -51,54 +52,136 @@ class undo_chunk(object):
     #
 
 
-class apply_to_selection(object):
+def apply_to_selection(func):
     """Decorator. Apply the function on each selected object."""
-
-    def __call__(self, func):
-        def wrapper(*args, **kwargs):
-            selection_list=cmds.ls(sl=True)
-            for selected in selection_list:
-                func(selected)
-        return wrapper
-    #
+    def wrapper(*args, **kwargs):
+        selection_list=cmds.ls(sl=True)
+        for selected in selection_list:
+            func(selected)
+    return wrapper
 
 
-class apply_to_relative_selected_shapes(object):
+def apply_to_relative_selected_shapes(func):
     """Decorator. Execute the function on each shape that is selected or
     relative to a selected node."""
+    def wrapper(*args, **kwargs):
+        shapes_node_types=[
+            'camera',
+            'locator',
+            'mesh',
+            'nurbsCurve',
+            'nurbsSurface',
+        ]
 
-    def __call__(self, func):
-        def wrapper(*args, **kwargs):
-            shapes_node_types=[
-                'camera',
-                'locator',
-                'mesh',
-                'nurbsCurve',
-                'nurbsSurface',
-            ]
+        # Build list of relative selected shapes.
+        selection_list=cmds.ls(sl=True)
+        relative_selected_shapes_list=[]
+        for selected_node in selection_list:
+            node_type=cmds.nodeType(selected_node)
+            if node_type in shapes_node_types:
+                # Node is a shape. Append.
+                relative_selected_shapes_list.append(selected_node)
+                continue
+            # Node is not a shape. Find relative shapes.
+            children_shapes=cmds.listRelatives(selected_node, shapes=True)
+            if children_shapes:
+                for child_shape in children_shapes:
+                    relative_selected_shapes_list.append(child_shape)
+        
+        # Execute function for each relative selected shape
+        for relative_shape in relative_selected_shapes_list:
+            func(relative_shape)
+    return wrapper
 
-            # Build list of relative selected shapes.
-            selection_list=cmds.ls(sl=True)
-            relative_selected_shapes_list=[]
-            for selected_node in selection_list:
-                node_type=cmds.nodeType(selected_node)
-                if node_type in shapes_node_types:
-                    # Node is a shape. Append.
-                    relative_selected_shapes_list.append(selected_node)
-                    continue
-                # Node is not a shape. Find relative shapes.
-                children_shapes=cmds.listRelatives(selected_node, shapes=True)
-                if children_shapes:
-                    for child_shape in children_shapes:
-                        relative_selected_shapes_list.append(child_shape)
-            
-            # Execute function for each relative selected shape
-            for relative_shape in relative_selected_shapes_list:
-                func(relative_shape)
-        return wrapper
+
+# Classes
+class MayaFile():
+    """Holds methods to handle a Maya file."""
+
+    def __init__(self):
+        self.extensions_dict={
+            'ma': 'mayaAscii',
+            'mb': 'mayaBinary',
+        }
+        self.version_regex='(?P<full_string>(?P<version_signaller>[vV]|version)(?P<number_string>[0-9]{1,4}))'
+        return
+    
+    def get_current_file(self):
+        """Return the name and full path of the current file."""
+        file=cmds.file(query=True, sceneName=True)
+        if file=='':
+            # Scene has not been saved yet.
+            return None
+        return file
+
+    def get_current_file_name(self):
+        """Return the name of the current file."""
+        file_name=cmds.file(query=True, sceneName=True, shortName=True)
+        if file_name=='':
+            # Scene has not been saved yet.
+            return None
+        return file_name
+    
+    def get_versioning_data(self, file_name):
+        """Return a dictionary that describes how a file is versioned."""
+        version_match=re.search(self.version_regex, file_name)
+        if not version_match:
+            return None
+        
+        data_dict=version_match.groupdict()
+        data_dict['number_padding']=len(data_dict['number_string'])
+
+        return data_dict
+    
+    def increment_current_file(self):
+        """Increment and save the current file."""
+        message=["# MayaFile.increment_file(): "]
+        file=self.get_current_file()
+        # Check
+        if not file:
+            message.append("file has not been saved yet. Cannot increment.")
+            raise Exception(''.join(message))
+        
+        # Unpack file name
+        full_file_name=file.split('/')[-1]
+        file_path='/'.join(file.split('/')[0:-1])
+
+        file_name=full_file_name.split('.')[0]
+        extension=full_file_name.split('.')[-1]
+
+        version_data_dict=self.get_versioning_data(file_name)
+        
+        # Check if the file is versioned correctly
+        if not version_data_dict:
+            message.append("file does not have a recognizable version name.\
+                Cannot increment.")
+            raise Exception(''.join(message))
+        
+        # Increment
+        incremented_number=int(version_data_dict['number_string']) + 1
+        incremented_number_string=str(incremented_number).zfill(version_data_dict['number_padding'])
+
+        new_version_string="{version_signaller}{incremented_number_string}".format(
+            version_signaller=version_data_dict['version_signaller'],
+            incremented_number_string=incremented_number_string
+        )
+
+        # Rebuild file name
+        previous_version_string=version_data_dict['full_string']
+        new_file_name=file_name.replace(previous_version_string, new_version_string)
+        new_file='{file_path}/{new_file_name}'.format(
+            file_path=file_path,
+            new_file_name=new_file_name,
+        )
+        # Save
+        cmds.file(file, rename=new_file)
+        cmds.file(save=True, type=self.extensions_dict[extension])
+        return
+    
     #
 
 
+# Utils
 def break_incoming_connection(attributeFullpath):
     """Break any incoming connection to an attribute.
     
@@ -403,24 +486,6 @@ def get_locked_channels(node_name):
         # Add result to dictionary
         lockedChannels[channel]=lockedAxes
     return lockedChannels
-
-
-def get_current_file():
-    """Return the name and full path of the current file."""
-    file=cmds.file(query=True, sceneName=True)
-    if file=='':
-        # Scene has not been saved yet.
-        return None
-    return file
-
-
-def get_current_filename():
-    """Return the name of the current file."""
-    filename=cmds.file(query=True, sceneName=True, shortName=True)
-    if filename=='':
-        # Scene has not been saved yet.
-        return None
-    return filename
 
 
 def get_node_type(node_name):
