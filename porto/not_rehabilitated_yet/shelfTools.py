@@ -43,7 +43,7 @@ class ColorChanger():
         self.tooltipItems=["Color Changer.\n",
             "Set a color override for selected objects."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         curveShapes.ShapesColor().build_and_show()
         return
@@ -58,7 +58,7 @@ class CurveShapeSelector():
         self.tooltipItems=["Curve Shape Selector.\n",
             "Set a curve shape for the selected objects."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         curveShapeSelector.CurveShapeSelector().build_and_show()
         return
@@ -75,7 +75,7 @@ class ConnectOffsetParentMatrix():
         self.tooltipItems=["Connect offset parent matrix.\n",
             "The first selected object acts as parent."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         messages=["# connect_offset_parent_matrix() - "]
         # Get selection
@@ -109,7 +109,7 @@ class CreateEmptyModule():
             "This function will either prompt you for information,\n",
             "or work from the currently selected placement locators."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         locs=portoUtils.get_selected_placement_locators()
 
@@ -178,7 +178,7 @@ class SelectionToLocator():
         self.tooltipItems=["Selection to locator.\n",
             "Create a locator on the selected objects or components."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         messages=["# create_loc_from_selection() - "]
         # Get selected transforms
@@ -246,7 +246,7 @@ class SelectionToHierarchy():
         self.tooltipItems=["Selection to hierarchy.\n",
             "Parent all selected objects together, by order of selection."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         messages=["# create_hierarchy_from_selection_order() - "]
         # Get selection
@@ -324,7 +324,7 @@ class IncrementSave():
         self.tooltipItems=["Increment save.\n",
             "Save the current scene into a new, incremented, file.\n"]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         portoUtils.increment_save()
     #
@@ -338,7 +338,7 @@ class ParentSelectedModules():
         self.tooltipItems=["Parent selected modules.\n",
             "Parent selected modules to the last selected module."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         messages=["# parent_selected_modules() - "]
 
@@ -406,7 +406,7 @@ class ReverseSelectionOrder():
         self.icon='reverseSelectionOrder.png'
         self.tooltipItems=["Reverse selection order."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         sel=cmds.ls(sl=True)
         sel.reverse()
@@ -426,7 +426,7 @@ class QuickplaceSelectionMultipleFollowers():
         self.tooltipItems=["Quickplace selection multiple followers.\n",
             "Place all the selected objects like the first one."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         messages=["# quickplace_selection_multiple_followers() - "]
         # Get selection
@@ -456,7 +456,7 @@ class QuickplaceSelectionSingleFollower():
         self.tooltipItems=["Quickplace selection single follower.\n",
             "Place the last selected object at the center of the other objects."]
 
-    @mayaUtils.undo_chunk()
+    @mayaUtils.UndoChunk()
     def __call__(self):
         messages=["# quickplace_selection_multiple_masters() - "]
         # Get selection
