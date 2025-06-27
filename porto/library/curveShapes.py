@@ -57,8 +57,8 @@ class ShapesCoords():
             )
 
         # Build repr
-        repr="{className}({attributes})".format(
-                className=self.__class__.__name__,
+        repr="{class_name}({attributes})".format(
+                class_name=self.__class__.__name__,
                 attributes=''.join(attributes_list))
         return repr
 
@@ -248,6 +248,14 @@ class ShapeChangerUI(ShapesCoords):
         )
         make_linear=degree_button_label=="Linear"
 
+        if not selection_list:
+            self.draw_shape(
+                curve_name=shape_name,
+                curve_coords=self.merged_coords_dict[shape_name],
+                linear=make_linear,
+            )
+            return
+            
         # Get behaviour
         preserve_existing_shapes=cmds.checkBox(
             self.preserve_shapes_controller,
@@ -261,7 +269,7 @@ class ShapeChangerUI(ShapesCoords):
             False: self.replace_shape,
         }
         for selected in selection_list:
-            with mayaUtils.preserve_selection():
+            with mayaUtils.SelectionPreservation():
                 func_to_apply_dict[preserve_existing_shapes](
                     target=selected,
                     curve_name=shape_name,
@@ -319,7 +327,7 @@ class ShapeChangerUI(ShapesCoords):
             adjustableColumn=2,
             columnAttach=([1, 'left', 0]),
         )
-        cmds.text("Change the shape of the selected objects.")
+        cmds.text("Change the shape of the selected objects or create a new curve.")
         cmds.separator(style='none')
 
         cmds.setParent(mainLayout)
