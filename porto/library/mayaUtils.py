@@ -496,7 +496,7 @@ def get_node_type(node_name):
     are just transforms.
     """
 
-    node_type=cmds.node_type(node_name)
+    node_type=cmds.nodeType(node_name)
 
     # Some nodes, such as locators or curves, are defined by their shapes.
     # This means that node_type will return 'transform' for them.
@@ -508,7 +508,7 @@ def get_node_type(node_name):
             shapes=True,
         )
         if isinstance(childrenShapes, list) and not childrenShapes==[]:
-            node_type=cmds.node_type(childrenShapes[0])
+            node_type=cmds.nodeType(childrenShapes[0])
 
     return node_type
 
@@ -587,9 +587,9 @@ def insert_parent(target, group_name):
     return
 
 
-def isDag(node_name):
+def is_dag(node_name):
     """Predicate. Return True if the node is a dagNode."""
-    return 'dagNode' in cmds.node_type(node_name, inherited=True)
+    return 'dagNode' in cmds.nodeType(node_name, inherited=True)
 
 
 def list_shapes_under_transform(node):
