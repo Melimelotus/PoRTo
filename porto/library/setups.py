@@ -12,6 +12,53 @@ from library import mayaUtils
 from library import utils
 
 
+class Chain():
+    """Holds methods required to create chains of controllers parented to each
+    other."""
+
+    def __init__(self):
+        # Defined by user
+        self.side=str()
+        self.name=str()
+
+        # Other attrs
+        self.module_group=str()
+
+    def build_default(self, side, name, length, skip_index_on_single_chains=True):
+        """TODO"""
+        # create module group
+        # add controller
+        pass
+        return
+    
+    def add_controller_to_hierarchy(self, side, name, index, controller_shape='curve8', translate=[0,0,0], rotate=[0,0,0]):
+        """TODO"""
+        # get module group
+        # find last controller child
+        # position_group, controller = self.create_controller_hierarchy
+        # create position, parentspace, controller
+        pass
+        return
+    
+    def create_controller_hierarchy(self, side, name, index, controller_shape='curve8', translate=[0,0,0], rotate=[0,0,0]):
+        """TODO"""
+        # create position, parentspace, controller, joint
+        # hide joint
+        # label controller
+        # controller shape
+        # place position
+        position_group=str()
+        controller=str()
+        pass
+        return position_group, controller
+    
+    def create_module_group(self, side, name):
+        """Create the module group that will hold the whole hierarchy."""
+        pass
+        return
+    #
+
+
 class ParentSpace(): # TODO cut blending parentspace in smaller methods
     """Holds the methods required to create parentspaces."""
 
@@ -228,75 +275,72 @@ class ParentSpace(): # TODO cut blending parentspace in smaller methods
 
 
 class PoseReader(): #TODO
-    """Holds the methods required to create a pose reader."""
+    """Holds the methods required to create a pose reader.
+    
+    A pose reader setup compares the angle between two objects (master and
+    reference). The angle calculated is then used to drive one or several
+    controllers.
+    """
 
     def __init__(self):
         self.message=['# {class_name}'.format(class_name=__class__.__name__)]
 
-        self.master_object_name=''
-        self.reference_object_name=''
-        self.base_name=''
+        # Assigned by user
+        self.master=str()
+        self.reference=str()
 
-        self.main_controller_node=''
-        self.angle_result_node=''
+        # If not provided by user: built by script
+        self.base_name=None
 
+        # Other vars
+        self.root_controller=''
+        self.angle_between=''
         self.nomenclature_regex='^(?P<side>[lrcu])_(?P<name>[a-zA-Z0-9_]+)_(?P<suffix>[a-z]{3})$'
         return
-    
-    def assign_data(self, master_name, reference_name, custom_base_name=None):
-        """Assign the data necessary for the creation of a pose reader setup."""
-        self.master_object_name=master_name
-        self.reference_object_name=reference_name
-        if custom_base_name:
-            self.base_name=custom_base_name
-        else:
-            self.base_name=self.build_base_name()
 
-    def build(self): # TODO
+    def build(self, master, reference, custom_base_name=None): # TODO
         """Build a pose reader setup from the available data."""
-        if not self.master_object_name or not self.reference_object_name:
-            self.message.extend([
-                ".build(): missing data (master_name or reference_name)."
-            ])
-            raise Exception(''.join(self.message))
-        elif not cmds.objExists(self.master_object_name):
-            self.message.extend([
-                ".build(): master object '{master_name}' does not exist.".format(master_name=self.master_object_name)
-            ])
-            raise NameError(''.join(self.message))
-        elif not cmds.objExists(self.reference_object_name):
-            self.message.extend([
-                ".build(): master object '{reference_name}' does not exist.".format(reference_name=self.reference_object_name)
-            ])
+        # Checks
+        message=["# {class_name}.build(): ".format(class_name=__class__.__name__)]
+        if not cmds.objExists(master):
+            message.append("master object '{master}' does not exist.".format(master=master))
+            raise NameError(''.join(message))
+        if not cmds.objExists(reference):
+            message.append("reference object '{reference}' does not exist.".format(reference=reference))
             raise NameError(''.join(self.message))
         
-        if not self.base_name:
-            self.base_name=self.build_base_name()
-            # Check if build successed
-            if not self.base_name:
-                self.base_name='{master_name}_poseReader'.format(
-                    master_name=self.master_object_name
-                )
-        
-        self.create_main_hierarchy()
+        # Assign arguments to class attributes
+        self.master=master
+        self.reference=reference
+        if custom_base_name: self.base_name=custom_base_name
+        else: self.build_base_name()
+
+        # Build
+        self.create_root_hierarchy()
         self.create_angle_calculation_setup()
         self.connect_angle_calculation_setup()
         # TODO create four controllers
         return
 
     def build_base_name(self):
-        """Build and return base name from master name."""
-        if not self.respects_nomenclature(self.master_object_name):
-            return None
+        """Build self.base_name from self.master."""
+        # Two behaviours: either self.master respects the expected nomenclature
+        # or it does not.
+        if not self.respects_nomenclature(self.master):
+            # Nomenclature is not recognized. Use the name of master as is.
+            self.base_name='{master}_poseReader'.format(
+                master=self.master
+            )
+            return
         
-        name_match=re.search(self.nomenclature_regex, self.master_object_name)
-        data_dict=name_match.groupdict()
+        # Nomenclature is recognized. Unpack and build from it.
+        data_dict=re.search(self.nomenclature_regex, self.master).groupdict()
 
-        built_base_name='{side}_{name}_poseReader'.format(
+        self.base_name='{side}_{name}_poseReader'.format(
             side=data_dict['side'],
             name=data_dict['name'],
         )
-        return built_base_name
+        return
     
     def connect_angle_calculation_setup(self):
         """Create attributes on the master controller to display the current
@@ -305,13 +349,13 @@ class PoseReader(): #TODO
         for axis in ['X', 'Y', 'Z']:
             for channel in ['translate', 'rotate', 'scale']:
                 attribute_to_lock='{master_ctl}.{channel}{axis}'.format(
-                    master_ctl=self.main_controller_node,
+                    master_ctl=self.root_controller,
                     channel=channel,
                     axis=axis
                 )
                 cmds.setAttr(attribute_to_lock, lock=True, keyable=False)
         cmds.setAttr(
-            '{master_ctl}.visibility'.format(master_ctl=self.main_controller_node),
+            '{master_ctl}.visibility'.format(master_ctl=self.root_controller),
             lock=True,
             keyable=False,
         )
@@ -320,17 +364,17 @@ class PoseReader(): #TODO
         for axis in ['X', 'Y', 'Z']:
             attribute_name='angle{axis}'.format(axis=axis)
             cmds.addAttr(
-                self.main_controller_node,
+                self.root_controller,
                 longName=attribute_name,
                 keyable=True,
                 hidden=False
             )
             attribute='{master_ctl}.{attribute_name}'.format(
-                master_ctl=self.main_controller_node,
+                master_ctl=self.root_controller,
                 attribute_name=attribute_name
             )
             cmds.connectAttr(
-                self.angle_result_node+'.euler'+axis,
+                self.angle_between+'.euler'+axis,
                 attribute,
                 force=True
             )
@@ -356,18 +400,18 @@ class PoseReader(): #TODO
 
         # Find the position group of the master object
         master_position_group=''
-        if self.respects_nomenclature(self.master_object_name):
-            master_position_group=self.master_object_name[:-3]+'position_grp'
+        if self.respects_nomenclature(self.master):
+            master_position_group=self.master[:-3]+'position_grp'
         else:
             master_relatives_list=cmds.listRelatives(
-                self.master_object_name,
+                self.master,
                 parent=True
             )
             if not master_relatives_list:
                 self.message.extend([
                     ".create_angle_calculation_setup(): could not find a position",
                     " group for the master object '{master_name}'.".format(
-                        master_name=self.master_object_name
+                        master_name=self.master
                     )
                 ])
                 raise Exception(''.join(self.message))
@@ -375,18 +419,18 @@ class PoseReader(): #TODO
 
         # Find the position group of the reference object
         reference_position_group=''
-        if self.respects_nomenclature(self.reference_object_name):
-            reference_position_group=self.reference_object_name[:-3]+'position_grp'
+        if self.respects_nomenclature(self.reference):
+            reference_position_group=self.reference[:-3]+'position_grp'
         else:
             reference_relatives_list=cmds.listRelatives(
-                self.reference_object_name,
+                self.reference,
                 parent=True
             )
             if not reference_relatives_list:
                 self.message.extend([
                     ".create_angle_calculation_setup(): could not find a position",
                     " group for the master object '{reference_name}'.".format(
-                        reference_name=self.reference_object_name
+                        reference_name=self.reference
                     )
                 ])
                 raise Exception(''.join(self.message))
@@ -406,7 +450,7 @@ class PoseReader(): #TODO
         )
 
         cmds.connectAttr(
-            self.master_object_name+'.worldMatrix',
+            self.master+'.worldMatrix',
             master_local_offset+'.matrixIn[0]',
             force=True
         )
@@ -441,7 +485,7 @@ class PoseReader(): #TODO
         )
 
         cmds.connectAttr(
-            self.reference_object_name+'.worldMatrix',
+            self.reference+'.worldMatrix',
             reference_local_offset+'.matrixIn[0]',
             force=True
         )
@@ -616,46 +660,46 @@ class PoseReader(): #TODO
         cmds.setAttr(reference_vector+'.operation', 2) # Substract
 
         # Calculate angle
-        self.angle_result_node='{base_name}_angle_anb'.format(base_name=self.base_name)
+        self.angle_between='{base_name}_angle_anb'.format(base_name=self.base_name)
         mayaUtils.create_discrete_node(
-            node_name=self.angle_result_node,
+            node_name=self.angle_between,
             node_type='angleBetween'
         )
         cmds.connectAttr(
             reference_vector+'.output3D',
-            self.angle_result_node+'.vector1',
+            self.angle_between+'.vector1',
             force=True
         )
         cmds.connectAttr(
             master_vector+'.output3D',
-            self.angle_result_node+'.vector2',
+            self.angle_between+'.vector2',
             force=True
         )
-        return self.angle_result_node
+        return self.angle_between
     
-    def create_main_hierarchy(self):
-        """Create the main hierarchy of the pose reader setup.
+    def create_root_hierarchy(self):
+        """Create the root hierarchy of the pose reader setup.
         
         Hierarchy created:
             {base_name}_mod
                 |{base_name}_position_grp
                     |{base_name}_parentspace_grp
-                        |{base_name}_master_ctl
+                        |{base_name}_root_ctl
         """
         # Build names
-        hierarchy_name_formats_dict={
-            'master_controller_name': '{base_name}_master_ctl',
-            'parentspace_group_name': '{base_name}_parentspace_grp',
-            'position_group_name': '{base_name}_position_grp',
-            'module_group_name': '{base_name}_mod',
+        hierarchy_formats_dict={
+            'root_controller': '{base_name}_root_ctl',
+            'parentspace_group': '{base_name}_parentspace_grp',
+            'position_group': '{base_name}_position_grp',
+            'module_group': '{base_name}_mod',
         }
-        hierarchy_names_dict={
-            key: value.format(base_name=self.base_name)
-            for key, value in hierarchy_name_formats_dict.items()
+        hierarchy_dict={
+            hierarchy: name.format(base_name=self.base_name)
+            for hierarchy, name in hierarchy_formats_dict.items()
         }
 
         # Create nodes
-        for name in hierarchy_names_dict.values():
+        for name in hierarchy_dict.values():
             if cmds.objExists(name):
                 self.message.extend([
                     ".create_main_hierarchy(): cannot create node '{name}'".format(name=name),
@@ -669,7 +713,7 @@ class PoseReader(): #TODO
 
         # Set the shape of the master controller
         curveShapes.ShapesCoords().add_shape(
-            target=hierarchy_names_dict['master_controller_name'],
+            target=hierarchy_dict['root_controller'],
             curve_name='locator',
             linear=True,
         )
@@ -677,29 +721,29 @@ class PoseReader(): #TODO
         # Create hierarchy
         # parentspace|controller
         mayaUtils.parent(
-            child=hierarchy_names_dict['master_controller_name'],
-            parent=hierarchy_names_dict['parentspace_group_name']
+            child=hierarchy_dict['root_controller'],
+            parent=hierarchy_dict['parentspace_group']
         )
         # position|parentspace|controller
         mayaUtils.parent(
-            child=hierarchy_names_dict['parentspace_group_name'],
-            parent=hierarchy_names_dict['position_group_name']
+            child=hierarchy_dict['parentspace_group'],
+            parent=hierarchy_dict['position_group']
         )
         # module|position|parentspace|controller
         mayaUtils.parent(
-            child=hierarchy_names_dict['position_group_name'],
-            parent=hierarchy_names_dict['module_group_name']
+            child=hierarchy_dict['position_group'],
+            parent=hierarchy_dict['module_group']
         )
 
         # Assign data
-        self.main_controller_node=hierarchy_names_dict['master_controller_name']
+        self.root_controller=hierarchy_dict['root_controller']
 
         # Create parentspace
         ParentSpace().create_blending_parentspace(
-            target=hierarchy_names_dict['parentspace_group_name'],
-            masters_list=[self.master_object_name, self.reference_object_name],
-            blend_attribute_holder=self.main_controller_node,
-            blend_attribute_name='follow_{master_object_name}'.format(master_object_name=self.master_object_name),
+            target=hierarchy_dict['parentspace_group'],
+            masters_list=[self.master, self.reference],
+            blend_attribute_holder=self.root_controller,
+            blend_attribute_name='follow_{master_object_name}'.format(master_object_name=self.master),
             constraint_type='parentConstraint',
         )
         return
