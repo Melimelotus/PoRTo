@@ -1,6 +1,7 @@
 """Collection of functions and classes that create specific, premade rigging
 setups."""
 
+
 import re
 from functools import partial
 
@@ -17,44 +18,114 @@ class Chain():
     other."""
 
     def __init__(self):
-        # Defined by user
+        # Always defined by user
         self.side=str()
         self.name=str()
 
         # Other attrs
+        self.padding=2
         self.module_group=str()
+        return
 
-    def build_default(self, side, name, length, skip_index_on_single_chains=True):
-        """TODO"""
-        # create module group
-        # add controller
-        pass
+
+    def build(self, side, name, chain_length, skip_index_on_single_chains=True):
+        """Create a chain hierarchy of the given length."""
+        # Checks
+        message=["{class_name}.build_default():".format(class_name=__class__.__name__)]
+        if chain_length<0:
+            message.extend([
+                " argument 'chain_length' must be a positive integer.",
+                " Given value: '{chain_length}'.".format(chain_length=chain_length)])
+            raise ValueError(''.join(message))
+        
+        # Build
+        self.create_module_group(side=side, name=name)
+
+        if chain_length==0:
+            # Nothing more to do
+            return
+        
+        if chain_length==1:
+            # Create a single controller
+            index=None if skip_index_on_single_chains else 1
+            position_group, controller=self.create_controller(
+                side=side,
+                name=name,
+                index=index
+            )
+            mayaUtils.parent(child=position_group, parent=self.module_group)
+            return
+        
+        # Create several controllers and parent them
+        chain_end=self.module_group
+        for i in range(1, chain_length+1):
+            position_group, controller=self.create_controller(
+                side=side,
+                name=name,
+                index=i
+            )
+            mayaUtils.parent(child=position_group, parent=chain_end)
+            chain_end=controller
         return
     
-    def add_controller_to_hierarchy(self, side, name, index, controller_shape='curve8', translate=[0,0,0], rotate=[0,0,0]):
-        """TODO"""
-        # get module group
-        # find last controller child
-        # position_group, controller = self.create_controller_hierarchy
-        # create position, parentspace, controller
-        pass
-        return
-    
-    def create_controller_hierarchy(self, side, name, index, controller_shape='curve8', translate=[0,0,0], rotate=[0,0,0]):
-        """TODO"""
-        # create position, parentspace, controller, joint
-        # hide joint
-        # label controller
-        # controller shape
-        # place position
-        position_group=str()
-        controller=str()
-        pass
+    def create_controller(self, side, name, index=None, controller_shape='circle8', translate=[0,0,0], rotate=[0,0,0], scale=[1,1,1]):
+        """Create a controller, its joint and a simple hierarchy.
+
+        Hierarchy created:
+            {side}_{name}position_group
+                |{side}_{name}parentspace_group
+                    |{side}_{name}ctl
+                        |{side}_{name}jnt
+        """
+        # Build names
+        name_start='{side}_{name}'.format(side=side, name=name)
+        if index:
+            name_start+='_{index}'.format(index=str(index).zfill(self.padding))
+        
+        position_group='{name_start}_position_grp'.format(name_start=name_start)
+        parentspace_group='{name_start}_parentspace_grp'.format(name_start=name_start)
+        controller='{name_start}_ctl'.format(name_start=name_start)
+        joint='{name_start}_jnt'.format(name_start=name_start)
+        
+        # Create groups
+        cmds.createNode('transform', name=position_group)
+        cmds.createNode('transform', name=parentspace_group)
+        mayaUtils.parent(child=parentspace_group, parent=position_group)
+
+        # Create controller
+        cmds.createNode('transform', name=controller)
+        curveShapes.ShapesCoords().replace_shape(target=controller, curve_name=controller_shape)
+        mayaUtils.parent(child=controller, parent=parentspace_group)
+
+        # Create joint and label
+        cmds.joint(controller, name=joint)
+        cmds.setAttr(joint+'.type', 18) # 18='Other'. Allows to input a custom value
+        cmds.setAttr(joint+'.otherType', name, type='string')
+
+        # Place position_group
+        cmds.setAttr(
+            position_group+'.translate',
+            *translate,
+            type='float3'
+        )
+        cmds.setAttr(
+            position_group+'.rotate',
+            *rotate,
+            type='float3'
+        )
+        cmds.setAttr(
+            position_group+'.scale',
+            *scale,
+            type='float3'
+        )
         return position_group, controller
     
     def create_module_group(self, side, name):
         """Create the module group that will hold the whole hierarchy."""
-        pass
+        # Build name
+        module_group='{side}_{name}_mod'.format(side=side, name=name)
+        mayaUtils.create_node(node_name=module_group, node_type='transform')
+        self.module_group=module_group
         return
     #
 
@@ -298,7 +369,7 @@ class PoseReader(): #TODO
         self.nomenclature_regex='^(?P<side>[lrcu])_(?P<name>[a-zA-Z0-9_]+)_(?P<suffix>[a-z]{3})$'
         return
 
-    def build(self, master, reference, custom_base_name=None): # TODO
+    def build_default(self, master, reference, custom_base_name=None): # TODO
         """Build a pose reader setup from the available data."""
         # Checks
         message=["# {class_name}.build(): ".format(class_name=__class__.__name__)]
