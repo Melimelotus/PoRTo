@@ -24,8 +24,8 @@ class Chain():
 
         self.index_padding=2
         self.controllers_list=list()
+        self.controllers_dict=dict()
         return
-
 
     def build(self, chain_length, skip_index_on_single_chains=True):
         """Create a chain hierarchy of the given length."""
@@ -50,6 +50,7 @@ class Chain():
             position_group, controller=self.create_controller(index=index)
             mayaUtils.parent(child=position_group, parent=self.module_group)
             self.controllers_list.append(controller)
+            self.controllers_dict[controller]=position_group
             return
         
         # Create several controllers and parent them
@@ -58,10 +59,11 @@ class Chain():
             position_group, controller=self.create_controller(index=i)
             mayaUtils.parent(child=position_group, parent=chain_end)
             self.controllers_list.append(controller)
+            self.controllers_dict[controller]=position_group
             chain_end=controller
         return
     
-    def create_controller(self, index=None, controller_shape='circle8', translate=[0,0,0], rotate=[0,0,0], scale=[1,1,1]):
+    def create_controller(self, index=None, controller_shape='circle8', translate=[0.0,0.0,0.0], rotate=[0.0,0.0,0.0], scale=[1.0, 1.0, 1.0]):
         """Create a controller, its joint and a simple hierarchy.
 
         Hierarchy created:
@@ -94,6 +96,7 @@ class Chain():
         cmds.joint(controller, name=joint)
         cmds.setAttr(joint+'.type', 18) # 18='Other'. Allows to input a custom value
         cmds.setAttr(joint+'.otherType', self.name, type='string')
+        cmds.setAttr(joint+'.visibility', False)
 
         # Place position_group
         cmds.setAttr(
@@ -299,6 +302,7 @@ class ParentSpace(): # TODO cut blending parentspace in smaller methods
             longName=blend_attribute_name,
             minValue=0,
             maxValue=1,
+            defaultValue=0.5,
             keyable=True,
             hidden=False
         )
@@ -346,9 +350,9 @@ class PoseReader(): #TODO
     controllers.
     """
 
-    def __init__(self, master, reference, side="u", name="poseReader"):
-        message=['# {class_name}.__init__()'.format(class_name=__class__.__name__)]
+    def __init__(self, master, reference, side='u', name='poseReader'):
         # Checks
+        message=["# {class_name}.__init__()".format(class_name=__class__.__name__)]
         if not cmds.objExists(master):
             message.append("master object '{master}' does not exist.".format(master=master))
             raise NameError(''.join(message))
@@ -364,40 +368,169 @@ class PoseReader(): #TODO
 
         self.angle_between=str()
         self.root_controller=str()
+        self.root_position=str()
         
         self.nomenclature_regex='^(?P<side>[lrcu])_(?P<name>[a-zA-Z0-9_]+)_(?P<suffix>[a-z]{3})$'
         return
 
-    def add_corrective(
-            self, name_suffix, translate=[0,0,0], rotate=[0,0,0],
-            scale=[1,1,1], plus_range=[0, 120], minus_range=[0, -120],
-            plus_translate=[0, 1, 0], minus_translate=[0, -1, 0]
+    def add_corrective(self, suffix, translate=[0.0, 0.0, 0.0], rotate=[0.0, 0.0, 0.0],
+            scale=[1.0, 1.0, 1.0], plus_range=[0.0, 120.0], minus_range=[0.0, -120.0],
+            plus_translate=[0.0, 1.0, 0.0], minus_translate=[0.0, -1.0, 0.0]
         ):
-        """Add a corrective controller under root."""
-        side=str()
-        name=str()+'name_suffix'
+        """Add a corrective controller under root.
+        
+        Args:
+            - suffix: str.
+                Used to create the name of the new corrective controller.
+                {self.side}_{self.name}_{suffix}_ctl
+            - translate: list of floats.
+        """
         # Create hierarchy
-        Chain().build(side=side, name=name, chain_length=1)
+        corrective_chain=Chain(
+            side=self.side,
+            name='{name}_{suffix}'.format(name=self.name, suffix=suffix)
+        )
+        position_group, controller=corrective_chain.create_controller(controller_shape='sphere')
+        mayaUtils.parent(position_group, self.root_controller)
+        cmds.setAttr(
+            position_group+'.translate',
+            *translate,
+            type='float3'
+        )
+        cmds.setAttr(
+            position_group+'.rotate',
+            *rotate,
+            type='float3'
+        )
+        cmds.setAttr(
+            position_group+'.scale',
+            *scale,
+            type='float3'
+        )
+
+        # Create attributes
+        cmds.setAttr(
+            controller+'.visibility',
+            lock=True,
+            keyable=False,
+        )
+
+        cmds.addAttr(
+            controller,
+            longName='POSE_READER',
+            attributeType='enum',
+            enumName='----------------:',
+            keyable=True,
+            hidden=False
+        )
+        cmds.setAttr(controller+'.POSE_READER', lock=True)
+
+        cmds.addAttr(
+            controller,
+            longName='currentValue',
+            attributeType='float',
+            keyable=True,
+            hidden=False
+        )
+
+        # PLUS ATTRIBUTES
+        cmds.addAttr(
+            controller,
+            longName='plusRangeStart',
+            defaultValue=plus_range[0],
+            keyable=True,
+            hidden=False
+        )
+        cmds.addAttr(
+            controller,
+            longName='plusRangeEnd',
+            defaultValue=plus_range[1],
+            min=0.1,
+            keyable=True,
+            hidden=False
+        )
+
+        for value, axis in zip(plus_translate, ['X', 'Y', 'Z']):
+            cmds.addAttr(
+                controller,
+                longName='plusTranslate{axis}'.format(axis=axis),
+                defaultValue=value,
+                keyable=True,
+                hidden=False
+            )
+
+        # MINUS ATTRIBUTES
+        cmds.addAttr(
+            controller,
+            longName='minusRangeStart',
+            defaultValue=minus_range[0],
+            keyable=True,
+            hidden=False
+        )
+        cmds.addAttr(
+            controller,
+            longName='minusRangeEnd',
+            defaultValue=minus_range[1],
+            max=-0.1,
+            keyable=True,
+            hidden=False
+        )
+
+        for value, axis in zip(minus_translate, ['X', 'Y', 'Z']):
+            cmds.addAttr(
+                controller,
+                longName='minusTranslate{axis}'.format(axis=axis),
+                defaultValue=value,
+                keyable=True,
+                hidden=False
+            )
+
+        # Create setup and connect
+        # TODO
         return
     
-    def build_default(self): # TODO
+    def build(self, create_default_correctives=True): # TODO
         """Build a pose reader setup from the available data."""
-        # Build root
-        root_chain=Chain(
-            side=self.side,
-            name=self.name+'_root')
-        root_chain.build(chain_length=1)
-        self.root_controller=root_chain.controllers_list[0]
+        # Create root hierarchy
+        self.create_root()
 
         # Create angle calculation setup
         self.create_angle_calculation_setup()
         self.input_angle_calculation_setup_into_root()
 
-        # Create correctives
-        # TODO
+        if not create_default_correctives:
+            return
+        # Create default correctives: four correctives installed around root.
+        self.add_corrective(
+            suffix='up01',
+            translate=[0,0,-1],
+            rotate=[-90,0,0],
+            plus_translate=[0, 1, 0],
+            minus_translate=[0, -1, 0],
+        )
+        self.add_corrective(
+            suffix='up02',
+            translate=[0,0,1],
+            rotate=[90,0,180],
+            plus_translate=[0, -1, 0],
+            minus_translate=[0, 1, 0],
+        )
+        self.add_corrective(
+            suffix='aim01',
+            translate=[1,0,0],
+            rotate=[-90,-90,0],
+            plus_translate=[1, 0, 0],
+            minus_translate=[0, -1, 0],
+        )
+        self.add_corrective(
+            suffix='aim02',
+            translate=[-1,0,0],
+            rotate=[-90,90,0],
+            plus_translate=[0, -1, 0],
+            minus_translate=[0, 1, 0],
+        )
         return
 
-    
     def input_angle_calculation_setup_into_root(self):
         """Create attributes on the master controller to display the current
         angle values and plugs the angle value into them."""
@@ -436,6 +569,25 @@ class PoseReader(): #TODO
             )
         return
     
+    def create_root(self):
+        """Create the root hierarchy and controller of the posereader setup."""
+        # Create hierarchy
+        root_chain=Chain(
+            side=self.side,
+            name=self.name+'_root')
+        root_chain.build(chain_length=1)
+        self.root_controller=root_chain.controllers_list[0]
+        self.root_position=root_chain.controllers_dict[self.root_controller]
+
+        # Create parentspace
+        ParentSpace().create_blending_parentspace(
+            target=self.root_position,
+            masters_list=[self.master, self.reference],
+            blend_attribute_holder=self.root_controller,
+            blend_attribute_name='follow_{master}'.format(master=self.master),
+        )
+        return
+
     def create_angle_calculation_setup(self):
         """Create and connect the nodes necessary to calculate the angle between
         the master and the target object."""
