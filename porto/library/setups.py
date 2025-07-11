@@ -17,18 +17,17 @@ class Chain():
     """Holds methods required to create chains of controllers parented to each
     other."""
 
-    def __init__(self):
-        # Always defined by user
-        self.side=str()
-        self.name=str()
+    def __init__(self, side, name):
+        self.side=side
+        self.name=name
+        self.module_group='{side}_{name}_mod'.format(side=self.side, name=self.name)
 
-        # Other attrs
-        self.padding=2
-        self.module_group=str()
+        self.index_padding=2
+        self.controllers_list=list()
         return
 
 
-    def build(self, side, name, chain_length, skip_index_on_single_chains=True):
+    def build(self, chain_length, skip_index_on_single_chains=True):
         """Create a chain hierarchy of the given length."""
         # Checks
         message=["{class_name}.build_default():".format(class_name=__class__.__name__)]
@@ -39,7 +38,7 @@ class Chain():
             raise ValueError(''.join(message))
         
         # Build
-        self.create_module_group(side=side, name=name)
+        self.create_module_group()
 
         if chain_length==0:
             # Nothing more to do
@@ -48,39 +47,33 @@ class Chain():
         if chain_length==1:
             # Create a single controller
             index=None if skip_index_on_single_chains else 1
-            position_group, controller=self.create_controller(
-                side=side,
-                name=name,
-                index=index
-            )
+            position_group, controller=self.create_controller(index=index)
             mayaUtils.parent(child=position_group, parent=self.module_group)
+            self.controllers_list.append(controller)
             return
         
         # Create several controllers and parent them
         chain_end=self.module_group
         for i in range(1, chain_length+1):
-            position_group, controller=self.create_controller(
-                side=side,
-                name=name,
-                index=i
-            )
+            position_group, controller=self.create_controller(index=i)
             mayaUtils.parent(child=position_group, parent=chain_end)
+            self.controllers_list.append(controller)
             chain_end=controller
         return
     
-    def create_controller(self, side, name, index=None, controller_shape='circle8', translate=[0,0,0], rotate=[0,0,0], scale=[1,1,1]):
+    def create_controller(self, index=None, controller_shape='circle8', translate=[0,0,0], rotate=[0,0,0], scale=[1,1,1]):
         """Create a controller, its joint and a simple hierarchy.
 
         Hierarchy created:
-            {side}_{name}position_group
-                |{side}_{name}parentspace_group
-                    |{side}_{name}ctl
-                        |{side}_{name}jnt
+            {side}_{name}_*{index}_position_group
+                |{side}_{name}_*{index}_parentspace_group
+                    |{side}_{name}_*{index}_ctl
+                        |{side}_{name}_*{index}_jnt
         """
         # Build names
-        name_start='{side}_{name}'.format(side=side, name=name)
+        name_start='{side}_{name}'.format(side=self.side, name=self.name)
         if index:
-            name_start+='_{index}'.format(index=str(index).zfill(self.padding))
+            name_start+='_{index}'.format(index=str(index).zfill(self.index_padding))
         
         position_group='{name_start}_position_grp'.format(name_start=name_start)
         parentspace_group='{name_start}_parentspace_grp'.format(name_start=name_start)
@@ -100,7 +93,7 @@ class Chain():
         # Create joint and label
         cmds.joint(controller, name=joint)
         cmds.setAttr(joint+'.type', 18) # 18='Other'. Allows to input a custom value
-        cmds.setAttr(joint+'.otherType', name, type='string')
+        cmds.setAttr(joint+'.otherType', self.name, type='string')
 
         # Place position_group
         cmds.setAttr(
@@ -120,12 +113,12 @@ class Chain():
         )
         return position_group, controller
     
-    def create_module_group(self, side, name):
+    def create_module_group(self):
         """Create the module group that will hold the whole hierarchy."""
-        # Build name
-        module_group='{side}_{name}_mod'.format(side=side, name=name)
-        mayaUtils.create_node(node_name=module_group, node_type='transform')
-        self.module_group=module_group
+        if cmds.objExists(self.module_group):
+            # Skip
+            return
+        mayaUtils.create_node(node_name=self.module_group, node_type='transform')
         return
     #
 
@@ -353,67 +346,59 @@ class PoseReader(): #TODO
     controllers.
     """
 
-    def __init__(self):
-        self.message=['# {class_name}'.format(class_name=__class__.__name__)]
-
-        # Assigned by user
-        self.master=str()
-        self.reference=str()
-
-        # If not provided by user: built by script
-        self.base_name=None
-
-        # Other vars
-        self.root_controller=''
-        self.angle_between=''
-        self.nomenclature_regex='^(?P<side>[lrcu])_(?P<name>[a-zA-Z0-9_]+)_(?P<suffix>[a-z]{3})$'
-        return
-
-    def build_default(self, master, reference, custom_base_name=None): # TODO
-        """Build a pose reader setup from the available data."""
+    def __init__(self, master, reference, side="u", name="poseReader"):
+        message=['# {class_name}.__init__()'.format(class_name=__class__.__name__)]
         # Checks
-        message=["# {class_name}.build(): ".format(class_name=__class__.__name__)]
         if not cmds.objExists(master):
             message.append("master object '{master}' does not exist.".format(master=master))
             raise NameError(''.join(message))
         if not cmds.objExists(reference):
             message.append("reference object '{reference}' does not exist.".format(reference=reference))
-            raise NameError(''.join(self.message))
+            raise NameError(''.join(message))
         
-        # Assign arguments to class attributes
+        # Assign attrs
         self.master=master
         self.reference=reference
-        if custom_base_name: self.base_name=custom_base_name
-        else: self.build_base_name()
+        self.side=side
+        self.name=name
 
-        # Build
-        self.create_root_hierarchy()
-        self.create_angle_calculation_setup()
-        self.connect_angle_calculation_setup()
-        # TODO create four controllers
+        self.angle_between=str()
+        self.root_controller=str()
+        
+        self.nomenclature_regex='^(?P<side>[lrcu])_(?P<name>[a-zA-Z0-9_]+)_(?P<suffix>[a-z]{3})$'
         return
 
-    def build_base_name(self):
-        """Build self.base_name from self.master."""
-        # Two behaviours: either self.master respects the expected nomenclature
-        # or it does not.
-        if not self.respects_nomenclature(self.master):
-            # Nomenclature is not recognized. Use the name of master as is.
-            self.base_name='{master}_poseReader'.format(
-                master=self.master
-            )
-            return
-        
-        # Nomenclature is recognized. Unpack and build from it.
-        data_dict=re.search(self.nomenclature_regex, self.master).groupdict()
-
-        self.base_name='{side}_{name}_poseReader'.format(
-            side=data_dict['side'],
-            name=data_dict['name'],
-        )
+    def add_corrective(
+            self, name_suffix, translate=[0,0,0], rotate=[0,0,0],
+            scale=[1,1,1], plus_range=[0, 120], minus_range=[0, -120],
+            plus_translate=[0, 1, 0], minus_translate=[0, -1, 0]
+        ):
+        """Add a corrective controller under root."""
+        side=str()
+        name=str()+'name_suffix'
+        # Create hierarchy
+        Chain().build(side=side, name=name, chain_length=1)
         return
     
-    def connect_angle_calculation_setup(self):
+    def build_default(self): # TODO
+        """Build a pose reader setup from the available data."""
+        # Build root
+        root_chain=Chain(
+            side=self.side,
+            name=self.name+'_root')
+        root_chain.build(chain_length=1)
+        self.root_controller=root_chain.controllers_list[0]
+
+        # Create angle calculation setup
+        self.create_angle_calculation_setup()
+        self.input_angle_calculation_setup_into_root()
+
+        # Create correctives
+        # TODO
+        return
+
+    
+    def input_angle_calculation_setup_into_root(self):
         """Create attributes on the master controller to display the current
         angle values and plugs the angle value into them."""
         # Lock and hide useless attributes
@@ -508,8 +493,8 @@ class PoseReader(): #TODO
             reference_position_group=reference_relatives_list[0]
         
         # Calculate local transformations for master object
-        master_local_offset='{base_name}_master_localOffset_mlm'.format(base_name=self.base_name)
-        master_local_transformations='{base_name}_master_localTransformations_mlm'.format(base_name=self.base_name)
+        master_local_offset='{side}_{name}_master_localOffset_mlm'.format(side=self.side, name=self.name)
+        master_local_transformations='{side}_{name}_master_localTransformations_mlm'.format(side=self.side, name=self.name)
 
         mayaUtils.create_discrete_node(
             node_name=master_local_offset,
@@ -543,8 +528,8 @@ class PoseReader(): #TODO
         )
 
         # Calculate local transformations for reference object
-        reference_local_offset='{base_name}_reference_localOffset_mlm'.format(base_name=self.base_name)
-        reference_local_transformations='{base_name}_reference_localTransformations_mlm'.format(base_name=self.base_name)
+        reference_local_offset='{side}_{name}_reference_localOffset_mlm'.format(side=self.side, name=self.name)
+        reference_local_transformations='{side}_{name}_reference_localTransformations_mlm'.format(side=self.side, name=self.name)
 
         mayaUtils.create_discrete_node(
             node_name=reference_local_offset,
@@ -578,14 +563,14 @@ class PoseReader(): #TODO
         )
 
         # Prepare vector tracing : get offset local and world coordinates
-        vector_end_local_offset='{base_name}_vectorEndLocalOffset_cpm'.format(base_name=self.base_name)
+        vector_end_local_offset='{side}_{name}_vectorEndLocalOffset_cpm'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=vector_end_local_offset,
             node_type='composeMatrix'
         )
         cmds.setAttr(vector_end_local_offset+'.inputTranslateY', 5)
 
-        vector_end_world_coords='{base_name}_vectorEndCoords_mlm'.format(base_name=self.base_name)
+        vector_end_world_coords='{side}_{name}_vectorEndCoords_mlm'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=vector_end_world_coords,
             node_type='multMatrix'
@@ -602,7 +587,7 @@ class PoseReader(): #TODO
         )
 
         # Get vector end for master
-        master_vector_end='{base_name}_master_vectorEnd_mlm'.format(base_name=self.base_name)
+        master_vector_end='{side}_{name}_master_vectorEnd_mlm'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=master_vector_end,
             node_type='multMatrix'
@@ -619,7 +604,7 @@ class PoseReader(): #TODO
         )
 
         # Get vector end for reference
-        inverse_reference_position_matrix='{base_name}_reference_inverseMatrix_ivm'.format(base_name=self.base_name)
+        inverse_reference_position_matrix='{side}_{name}_reference_inverseMatrix_ivm'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=inverse_reference_position_matrix,
             node_type='inverseMatrix'
@@ -630,7 +615,7 @@ class PoseReader(): #TODO
             force=True
         )
 
-        vector_end_offset_to_reference='{base_name}_reference_vectorEndOffset_mlm'.format(base_name=self.base_name)
+        vector_end_offset_to_reference='{side}_{name}_reference_vectorEndOffset_mlm'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=vector_end_offset_to_reference,
             node_type='multMatrix'
@@ -646,7 +631,7 @@ class PoseReader(): #TODO
             force=True
         )
 
-        reference_vector_end='{base_name}_reference_vectorEnd_mlm'.format(base_name=self.base_name)
+        reference_vector_end='{side}_{name}_reference_vectorEnd_mlm'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=reference_vector_end,
             node_type='multMatrix'
@@ -663,9 +648,9 @@ class PoseReader(): #TODO
         )
 
         # Trace vectors
-        decompose_master_vector_end='{base_name}_master_vectorEnd_dcm'.format(base_name=self.base_name)
-        decompose_reference_vector_end='{base_name}_reference_vectorEnd_dcm'.format(base_name=self.base_name)
-        decompose_vectors_start='{base_name}_vectorsStart_dcm'.format(base_name=self.base_name)
+        decompose_master_vector_end='{side}_{name}_master_vectorEnd_dcm'.format(side=self.side, name=self.name)
+        decompose_reference_vector_end='{side}_{name}_reference_vectorEnd_dcm'.format(side=self.side, name=self.name)
+        decompose_vectors_start='{side}_{name}_vectorsStart_dcm'.format(side=self.side, name=self.name)
 
         mayaUtils.create_discrete_node(
             node_name=decompose_master_vector_end,
@@ -696,7 +681,7 @@ class PoseReader(): #TODO
             force=True
         )
 
-        master_vector='{base_name}_master_vector_pma'.format(base_name=self.base_name)
+        master_vector='{side}_{name}_master_vector_pma'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=master_vector,
             node_type='plusMinusAverage'
@@ -713,7 +698,7 @@ class PoseReader(): #TODO
         )
         cmds.setAttr(master_vector+'.operation', 2) # Substract
 
-        reference_vector='{base_name}_reference_vector_pma'.format(base_name=self.base_name)
+        reference_vector='{side}_{name}_reference_vector_pma'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=reference_vector,
             node_type='plusMinusAverage'
@@ -731,7 +716,7 @@ class PoseReader(): #TODO
         cmds.setAttr(reference_vector+'.operation', 2) # Substract
 
         # Calculate angle
-        self.angle_between='{base_name}_angle_anb'.format(base_name=self.base_name)
+        self.angle_between='{side}_{name}_angle_anb'.format(side=self.side, name=self.name)
         mayaUtils.create_discrete_node(
             node_name=self.angle_between,
             node_type='angleBetween'
@@ -747,78 +732,7 @@ class PoseReader(): #TODO
             force=True
         )
         return self.angle_between
-    
-    def create_root_hierarchy(self):
-        """Create the root hierarchy of the pose reader setup.
-        
-        Hierarchy created:
-            {base_name}_mod
-                |{base_name}_position_grp
-                    |{base_name}_parentspace_grp
-                        |{base_name}_root_ctl
-        """
-        # Build names
-        hierarchy_formats_dict={
-            'root_controller': '{base_name}_root_ctl',
-            'parentspace_group': '{base_name}_parentspace_grp',
-            'position_group': '{base_name}_position_grp',
-            'module_group': '{base_name}_mod',
-        }
-        hierarchy_dict={
-            hierarchy: name.format(base_name=self.base_name)
-            for hierarchy, name in hierarchy_formats_dict.items()
-        }
 
-        # Create nodes
-        for name in hierarchy_dict.values():
-            if cmds.objExists(name):
-                self.message.extend([
-                    ".create_main_hierarchy(): cannot create node '{name}'".format(name=name),
-                    ": it exists already. Please solve conflicts before proceeding."
-                ])
-                raise Exception(''.join(self.message))
-            cmds.createNode(
-                'transform',
-                name=name
-            )
-
-        # Set the shape of the master controller
-        curveShapes.ShapesCoords().add_shape(
-            target=hierarchy_dict['root_controller'],
-            curve_name='locator',
-            linear=True,
-        )
-
-        # Create hierarchy
-        # parentspace|controller
-        mayaUtils.parent(
-            child=hierarchy_dict['root_controller'],
-            parent=hierarchy_dict['parentspace_group']
-        )
-        # position|parentspace|controller
-        mayaUtils.parent(
-            child=hierarchy_dict['parentspace_group'],
-            parent=hierarchy_dict['position_group']
-        )
-        # module|position|parentspace|controller
-        mayaUtils.parent(
-            child=hierarchy_dict['position_group'],
-            parent=hierarchy_dict['module_group']
-        )
-
-        # Assign data
-        self.root_controller=hierarchy_dict['root_controller']
-
-        # Create parentspace
-        ParentSpace().create_blending_parentspace(
-            target=hierarchy_dict['parentspace_group'],
-            masters_list=[self.master, self.reference],
-            blend_attribute_holder=self.root_controller,
-            blend_attribute_name='follow_{master_object_name}'.format(master_object_name=self.master),
-            constraint_type='parentConstraint',
-        )
-        return
-    
     def respects_nomenclature(self, name):
         """Returns True if the given name respects the expected nomenclature."""
         name_match=re.search(self.nomenclature_regex, name)
