@@ -1283,7 +1283,7 @@ class PoseReaderUI(PoseReader):
         )
         new_posereader.build(create_parentspace=False, create_default_correctives=True)
         # Place
-        cmds.delete(cmds.pointConstraint(master_name, reference_name, new_posereader.root_position, mo=False))
+        cmds.delete(cmds.pointConstraint(master_name, new_posereader.root_position, mo=False))
         cmds.delete(cmds.orientConstraint(master_name, new_posereader.root_position, mo=False))
         new_posereader.create_parentspace_on_root()
 
