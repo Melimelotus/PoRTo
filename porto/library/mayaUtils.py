@@ -3,9 +3,11 @@
 This module is meant to be imported in other PoRTo modules.
 """
 
+from collections import OrderedDict
 import re
 
 from maya import cmds
+from maya import mel
 from maya.api import OpenMaya # API 2.0
 
 from library import utils
@@ -93,7 +95,6 @@ def apply_to_relative_selected_shapes(func):
             func(relative_shape)
     return wrapper
 
-
 # Classes
 class MayaFile():
     """Holds methods to handle a Maya file."""
@@ -132,7 +133,7 @@ class MayaFile():
         data_dict['number_padding']=len(data_dict['number_string'])
 
         return data_dict
-    
+
     def increment_current_file(self):
         """Increment and save the current file."""
         message=["# MayaFile.increment_file(): "]
@@ -177,9 +178,56 @@ class MayaFile():
         cmds.file(file, rename=new_file)
         cmds.file(save=True, type=self.extensions_dict[extension])
         return
-    
     #
 
+class Shelf():
+    """Holds methods to handle shelves in Maya."""
+    
+    def __init__(self):
+        self.shelves_parent_layout=mel.eval('$temp=$gShelfTopLevel')
+        return
+
+    def get_shelf_buttons(self, shelf_name):
+        """Return a list of all buttons on the shelf."""
+        buttons=cmds.shelfLayout(shelf_name, query=True, childArray=True)
+        return buttons
+    
+    def get_button_data(self, button_name):
+        """Return an ordered dict holding the button's data.
+
+        Data retrieved:
+            - toolname
+            - tooltip
+            - icon_full_path
+            - icon_label
+            - source_type
+            - command
+        """
+        toolname=cmds.shelfButton(button_name, query=True, label=True)
+        tooltip=cmds.shelfButton(button_name, query=True, annotation=True)
+        icon_full_path=cmds.shelfButton(button_name, query=True, image=True)
+        icon_label=cmds.shelfButton(button_name, query=True, imageOverlayLabel=True)
+        source_type=cmds.shelfButton(button_name, query=True, sourceType=True)
+        command=cmds.shelfButton(button_name, query=True, command=True)
+
+        data_dict=OrderedDict([
+            ('toolname', toolname),
+            ('tooltip', tooltip),
+            ('icon_full_path', icon_full_path),
+            ('icon_label', icon_label),
+            ('source_type', source_type),
+            ('command', command),
+        ])
+        return data_dict
+    
+    def export_shelf_buttons(self, shelf_name): # TODO WIP
+        """Export all the buttons of the given shelf into a .JSON"""
+        buttons=self.get_shelf_buttons(shelf_name)
+        for button in buttons:
+            button_data_dict=self.get_button_data(button)
+            print(button_data_dict)
+        return
+    #
 
 # Utils
 def break_incoming_connection(attributeFullpath):
