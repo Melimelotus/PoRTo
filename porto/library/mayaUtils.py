@@ -4,6 +4,8 @@ This module is meant to be imported in other PoRTo modules.
 """
 
 from collections import OrderedDict
+import json
+import os
 import re
 
 from maya import cmds
@@ -216,16 +218,32 @@ class Shelf():
             ('icon_full_path', icon_full_path),
             ('icon_label', icon_label),
             ('source_type', source_type),
-            ('command', command),
+            ('command_string', command),
         ])
         return data_dict
     
-    def export_shelf_buttons(self, shelf_name): # TODO WIP
+    def export_shelf_buttons(self, shelf_name):
         """Export all the buttons of the given shelf into a .JSON"""
-        buttons=self.get_shelf_buttons(shelf_name)
-        for button in buttons:
-            button_data_dict=self.get_button_data(button)
-            print(button_data_dict)
+        data_to_serialize=[
+            self.get_button_data(button)
+            for button in self.get_shelf_buttons(shelf_name)
+        ]
+
+        # Build file name and path
+        output_file_name="shelf_buttons_{shelf_name}.json".format(shelf_name=shelf_name)
+
+        library_dir=os.path.dirname(__file__)
+        porto_root_dir=os.path.dirname(library_dir)
+        output_file_path="{porto_root_dir}/data/user".format(porto_root_dir=porto_root_dir)
+        
+        output_file="{output_file_path}/{output_file_name}".format(
+            output_file_path=output_file_path,
+            output_file_name=output_file_name,
+        )
+
+        # Dump
+        with open(output_file, 'w') as f:
+            json.dump(data_to_serialize, f, indent=4)
         return
     #
 
