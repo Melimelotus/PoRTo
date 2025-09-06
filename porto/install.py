@@ -42,8 +42,8 @@ class PortoShelf():
     def __init__(self):
         self.shelf_name='PoRTo'
         self.default_index=10 # Shelves numerotation start at 1, not 0
-        self.porto_icons_path='{current_dir}/icons'.format(
-            current_dir=os.path.dirname(__file__))
+        self.porto_icons_path='{porto_root_dir}/icons'.format(
+            porto_root_dir=os.path.dirname(__file__))
         return
     
     def create(self):
