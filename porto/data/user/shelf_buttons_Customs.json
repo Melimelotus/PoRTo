@@ -5,7 +5,7 @@
         "icon_full_path": "pythonFamily.png",
         "icon_label": "syspath",
         "source_type": "python",
-        "command": "import sys\nsys.path.append('D:/User/Lisa/3D/PORTO/porto')"
+        "command_string": "import sys\nsys.path.append('D:/User/Lisa/3D/PORTO/porto')"
     },
     {
         "toolname": "IncrementCurrentFile",
@@ -13,7 +13,7 @@
         "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/incrementSave.png",
         "icon_label": "",
         "source_type": "python",
-        "command": "from library import mayaUtils\nmayaUtils.MayaFile().increment_current_file()"
+        "command_string": "from library import mayaUtils\nmayaUtils.MayaFile().increment_current_file()"
     },
     {
         "toolname": "Node Editor",
@@ -21,7 +21,7 @@
         "icon_full_path": "menuIconWindow.png",
         "icon_label": "NE",
         "source_type": "mel",
-        "command": "NodeEditorWindow"
+        "command_string": "NodeEditorWindow"
     },
     {
         "toolname": "Component Editor",
@@ -29,7 +29,7 @@
         "icon_full_path": "menuIconWindow.png",
         "icon_label": "CpEd",
         "source_type": "mel",
-        "command": "ComponentEditor"
+        "command_string": "ComponentEditor"
     },
     {
         "toolname": "SARN",
@@ -37,7 +37,7 @@
         "icon_full_path": "menuIconModify.png",
         "icon_label": "SaRN",
         "source_type": "mel",
-        "command": "SearchAndReplaceNames"
+        "command_string": "SearchAndReplaceNames"
     },
     {
         "toolname": "Cluster",
@@ -45,7 +45,7 @@
         "icon_full_path": "cluster.png",
         "icon_label": "",
         "source_type": "mel",
-        "command": "CreateCluster"
+        "command_string": "CreateCluster"
     },
     {
         "toolname": "Locator",
@@ -53,7 +53,7 @@
         "icon_full_path": "locator.png",
         "icon_label": "",
         "source_type": "mel",
-        "command": "CreateLocator"
+        "command_string": "CreateLocator"
     },
     {
         "toolname": "parentConstraint",
@@ -61,7 +61,7 @@
         "icon_full_path": "parentConstraint.png",
         "icon_label": "pac",
         "source_type": "mel",
-        "command": "ParentConstraintOptions"
+        "command_string": "ParentConstraintOptions"
     },
     {
         "toolname": "pointConstraint",
@@ -69,7 +69,7 @@
         "icon_full_path": "posConstraint.png",
         "icon_label": "poc",
         "source_type": "mel",
-        "command": "PointConstraintOptions"
+        "command_string": "PointConstraintOptions"
     },
     {
         "toolname": "orientConstraint",
@@ -77,7 +77,7 @@
         "icon_full_path": "orientConstraint.png",
         "icon_label": "orc",
         "source_type": "mel",
-        "command": "OrientConstraintOptions"
+        "command_string": "OrientConstraintOptions"
     },
     {
         "toolname": "aimConstraint",
@@ -85,7 +85,7 @@
         "icon_full_path": "aimConstraint.png",
         "icon_label": "amc",
         "source_type": "mel",
-        "command": "AimConstraintOptions"
+        "command_string": "AimConstraintOptions"
     },
     {
         "toolname": "scaleConstraint",
@@ -93,7 +93,7 @@
         "icon_full_path": "scaleConstraint.png",
         "icon_label": "scc",
         "source_type": "mel",
-        "command": "ScaleConstraintOptions"
+        "command_string": "ScaleConstraintOptions"
     },
     {
         "toolname": "LocatorToController",
@@ -101,7 +101,7 @@
         "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/locatorToController.png",
         "icon_label": "",
         "source_type": "python",
-        "command": "from maya import cmds\nfrom library import mayaUtils\n\nselection_list=cmds.ls(sl=True)\n\nfor selected in selection_list:\n    name_base=selected[:-4]\n    print(name_base)\n    print(isinstance(name_base, str))\n    \n    controller_name=name_base+'_ctl'\n    cmds.circle(name=controller_name, degree=1)\n    \n    joint_name=name_base+'_jnt'\n    cmds.select(controller_name, replace=True)\n    cmds.joint(name=joint_name)\n    \n    parentspace_name=name_base+'_parentspace_grp'\n    mayaUtils.insert_parent(controller_name, parentspace_name)\n    \n    position_name=name_base+'_position_grp'\n    mayaUtils.insert_parent(parentspace_name, position_name)\n    \n    cmds.delete(\n        cmds.parentConstraint(selected, position_name, mo=False)\n    )"
+        "command_string": "from maya import cmds\nfrom library import mayaUtils\n\nselection_list=cmds.ls(sl=True)\n\nfor selected in selection_list:\n    name_base=selected[:-4]\n    print(name_base)\n    print(isinstance(name_base, str))\n    \n    controller_name=name_base+'_ctl'\n    cmds.circle(name=controller_name, degree=1)\n    \n    joint_name=name_base+'_jnt'\n    cmds.select(controller_name, replace=True)\n    cmds.joint(name=joint_name)\n    \n    parentspace_name=name_base+'_parentspace_grp'\n    mayaUtils.insert_parent(controller_name, parentspace_name)\n    \n    position_name=name_base+'_position_grp'\n    mayaUtils.insert_parent(parentspace_name, position_name)\n    \n    cmds.delete(\n        cmds.parentConstraint(selected, position_name, mo=False)\n    )"
     },
     {
         "toolname": "ColorChangerUI",
@@ -109,7 +109,7 @@
         "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/colorChanger.png",
         "icon_label": "",
         "source_type": "python",
-        "command": "import importlib\n\nfrom library import curveShapes\nimportlib.reload(curveShapes)\n\ncurveShapes.ColorChangerUI().build_and_show()\n#"
+        "command_string": "import importlib\n\nfrom library import curveShapes\nimportlib.reload(curveShapes)\n\ncurveShapes.ColorChangerUI().build_and_show()\n#"
     },
     {
         "toolname": "ShapeChangerUI",
@@ -117,7 +117,7 @@
         "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/shapeChanger.png",
         "icon_label": "",
         "source_type": "python",
-        "command": "import importlib\n\nfrom library import curveShapes\n\ncurveShapes.ShapeChangerUI().build_and_show()\n#"
+        "command_string": "import importlib\n\nfrom library import curveShapes\n\ncurveShapes.ShapeChangerUI().build_and_show()\n#"
     },
     {
         "toolname": "Switch Line Width",
@@ -125,7 +125,7 @@
         "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/lineWidth.png",
         "icon_label": "width",
         "source_type": "python",
-        "command": "import importlib\nfrom library import curveShapes\nfrom library import mayaUtils\n\nimportlib.reload(curveShapes)\nimportlib.reload(mayaUtils)\n\n@mayaUtils.apply_to_relative_selected_shapes\ndef execute(target):\n    curveShapes.switch_line_width(target)\n    \nexecute()"
+        "command_string": "import importlib\nfrom library import curveShapes\nfrom library import mayaUtils\n\nimportlib.reload(curveShapes)\nimportlib.reload(mayaUtils)\n\n@mayaUtils.apply_to_relative_selected_shapes\ndef execute(target):\n    curveShapes.switch_line_width(target)\n    \nexecute()"
     },
     {
         "toolname": "PoseReaderUI",
@@ -133,7 +133,7 @@
         "icon_full_path": "angleBetween.svg",
         "icon_label": "",
         "source_type": "python",
-        "command": "import importlib\n\nfrom library import setups\nimportlib.reload(setups)\n\nsetups.PoseReaderUI().build_and_show()\n#"
+        "command_string": "import importlib\n\nfrom library import setups\nimportlib.reload(setups)\n\nsetups.PoseReaderUI().build_and_show()\n#"
     },
     {
         "toolname": "Plane",
@@ -141,7 +141,7 @@
         "icon_full_path": "polyMesh.png",
         "icon_label": "",
         "source_type": "mel",
-        "command": "CreatePolygonPlane"
+        "command_string": "CreatePolygonPlane"
     },
     {
         "toolname": "Mirror",
@@ -149,7 +149,7 @@
         "icon_full_path": "polyMirrorGeometry.png",
         "icon_label": "",
         "source_type": "mel",
-        "command": "MirrorPolygonGeometry"
+        "command_string": "MirrorPolygonGeometry"
     },
     {
         "toolname": "NURBS Plane",
@@ -157,7 +157,7 @@
         "icon_full_path": "plane.png",
         "icon_label": "",
         "source_type": "mel",
-        "command": "CreateNURBSPlane"
+        "command_string": "CreateNURBSPlane"
     },
     {
         "toolname": "rebuildSurface",
@@ -165,7 +165,7 @@
         "icon_full_path": "rebuildSurface.png",
         "icon_label": "rebuild",
         "source_type": "mel",
-        "command": "RebuildSurfacesOptions"
+        "command_string": "RebuildSurfacesOptions"
     },
     {
         "toolname": "Add Influence",
@@ -173,7 +173,7 @@
         "icon_full_path": "menuIconSkinning.png",
         "icon_label": "addInf",
         "source_type": "mel",
-        "command": "AddInfluenceOptions"
+        "command_string": "AddInfluenceOptions"
     },
     {
         "toolname": "Remove Unused Influences",
@@ -181,7 +181,7 @@
         "icon_full_path": "menuIconSkinning.png",
         "icon_label": "RUI",
         "source_type": "mel",
-        "command": "RemoveUnusedInfluences"
+        "command_string": "RemoveUnusedInfluences"
     },
     {
         "toolname": "Copy Vertex Weights",
@@ -189,7 +189,7 @@
         "icon_full_path": "menuIconSkinning.png",
         "icon_label": "CVW",
         "source_type": "mel",
-        "command": "CopyVertexWeights"
+        "command_string": "CopyVertexWeights"
     },
     {
         "toolname": "Paste Vertex Weights",
@@ -197,7 +197,7 @@
         "icon_full_path": "menuIconSkinning.png",
         "icon_label": "PVW",
         "source_type": "mel",
-        "command": "PasteVertexWeights"
+        "command_string": "PasteVertexWeights"
     },
     {
         "toolname": "CopySkin",
@@ -205,7 +205,7 @@
         "icon_full_path": "menuIconSkinning.png",
         "icon_label": "copy",
         "source_type": "mel",
-        "command": "CopySkinWeightsOptions"
+        "command_string": "CopySkinWeightsOptions"
     },
     {
         "toolname": "MirrorSkin",
@@ -213,7 +213,7 @@
         "icon_full_path": "menuIconSkinning.png",
         "icon_label": "mirror",
         "source_type": "mel",
-        "command": "MirrorSkinWeightsOptions"
+        "command_string": "MirrorSkinWeightsOptions"
     },
     {
         "toolname": "copyJointOrient",
@@ -221,7 +221,7 @@
         "icon_full_path": "pythonFamily.png",
         "icon_label": "copyJointOrient",
         "source_type": "python",
-        "command": "from maya import cmds\n\nselection_list=cmds.ls(sl=True)\n\nfor axis in ['X', 'Y', 'Z']:\n    cmds.setAttr(selection_list[1]+'.jointOrient'+axis, cmds.getAttr(selection_list[0]+'.jointOrient'+axis))"
+        "command_string": "from maya import cmds\n\nselection_list=cmds.ls(sl=True)\n\nfor axis in ['X', 'Y', 'Z']:\n    cmds.setAttr(selection_list[1]+'.jointOrient'+axis, cmds.getAttr(selection_list[0]+'.jointOrient'+axis))"
     },
     {
         "toolname": "Reset Transformation Values",
@@ -229,7 +229,7 @@
         "icon_full_path": "pythonFamily.png",
         "icon_label": "reset",
         "source_type": "python",
-        "command": "import importlib\n\nfrom library import mayaUtils\n\n@mayaUtils.apply_to_selection\ndef execute(target):\n    mayaUtils.reset_transform_values(target)\n    \nexecute()\n#"
+        "command_string": "import importlib\n\nfrom library import mayaUtils\n\n@mayaUtils.apply_to_selection\ndef execute(target):\n    mayaUtils.reset_transform_values(target)\n    \nexecute()\n#"
     },
     {
         "toolname": "label",
@@ -237,6 +237,6 @@
         "icon_full_path": "menuIconEdit.png",
         "icon_label": "icon label",
         "source_type": "mel",
-        "command": "Undo"
+        "command_string": "Undo"
     }
 ]

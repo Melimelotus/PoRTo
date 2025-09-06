@@ -5,7 +5,6 @@ This module is meant to be imported in other PoRTo modules.
 
 from collections import OrderedDict
 import json
-import os
 import re
 
 from maya import cmds
@@ -182,17 +181,46 @@ class MayaFile():
         return
     #
 
+
 class Shelf():
     """Holds methods to handle shelves in Maya."""
     
     def __init__(self):
         self.shelves_parent_layout=mel.eval('$temp=$gShelfTopLevel')
         return
-
-    def get_shelf_buttons(self, shelf_name):
-        """Return a list of all buttons on the shelf."""
-        buttons=cmds.shelfLayout(shelf_name, query=True, childArray=True)
-        return buttons
+    
+    def create_button(self, shelf_name, toolname, source_type, command_string,
+                      tooltip='', icon='commandButton.png', icon_label=''):
+        """Create a new button into shelf_name."""
+        # Create new
+        cmds.shelfButton(
+            label=toolname,
+            parent=shelf_name,
+            sourceType=source_type,
+            annotation=tooltip,
+            image=icon,
+            imageOverlayLabel=icon_label,
+            command=command_string,
+        )
+        return
+    
+    def empty_shelf(self, shelf_name):
+        """Remove all buttons inside the shelf."""
+        shelf_buttons_list=cmds.shelfLayout(shelf_name, query=True, childArray=True)
+        for button in shelf_buttons_list:
+            cmds.deleteUI(button)
+        return
+    
+    def find_button_in_shelf(self, button_label, shelf_name):
+        """Returns a shelfButton object if a button of the given label exists
+        inside the shelf. Otherwise, returns None."""
+        shelf_buttons_list=cmds.shelfLayout(shelf_name, query=True, childArray=True)
+        for shelf_button in shelf_buttons_list:
+            found_label=cmds.shelfButton(shelf_button, query=True, label=True)
+            # If label of shelf_button matches requested label, return button obj
+            if found_label==button_label:
+                return shelf_button
+        return None
     
     def get_button_data(self, button_name):
         """Return an ordered dict holding the button's data.
@@ -200,50 +228,63 @@ class Shelf():
         Data retrieved:
             - toolname
             - tooltip
-            - icon_full_path
+            - icon
             - icon_label
             - source_type
-            - command
+            - command_string
         """
         toolname=cmds.shelfButton(button_name, query=True, label=True)
         tooltip=cmds.shelfButton(button_name, query=True, annotation=True)
-        icon_full_path=cmds.shelfButton(button_name, query=True, image=True)
+        icon=cmds.shelfButton(button_name, query=True, image=True)
         icon_label=cmds.shelfButton(button_name, query=True, imageOverlayLabel=True)
         source_type=cmds.shelfButton(button_name, query=True, sourceType=True)
-        command=cmds.shelfButton(button_name, query=True, command=True)
+        command_string=cmds.shelfButton(button_name, query=True, command=True)
 
         data_dict=OrderedDict([
             ('toolname', toolname),
             ('tooltip', tooltip),
-            ('icon_full_path', icon_full_path),
+            ('icon', icon),
             ('icon_label', icon_label),
             ('source_type', source_type),
-            ('command_string', command),
+            ('command_string', command_string),
         ])
         return data_dict
     
-    def export_shelf_buttons(self, shelf_name):
-        """Export all the buttons of the given shelf into a .JSON"""
+    def list_shelf_buttons(self, shelf_name):
+        """Return a list of all buttons on the shelf."""
+        buttons=cmds.shelfLayout(shelf_name, query=True, childArray=True)
+        return buttons
+
+    def export_shelf_buttons(self, shelf_name, output_file):
+        """Export all the buttons of the given shelf into a .JSON file"""
+        # Gather data
         data_to_serialize=[
             self.get_button_data(button)
-            for button in self.get_shelf_buttons(shelf_name)
+            for button in self.list_shelf_buttons(shelf_name)
         ]
-
-        # Build file name and path
-        output_file_name="shelf_buttons_{shelf_name}.json".format(shelf_name=shelf_name)
-
-        library_dir=os.path.dirname(__file__)
-        porto_root_dir=os.path.dirname(library_dir)
-        output_file_path="{porto_root_dir}/data/user".format(porto_root_dir=porto_root_dir)
-        
-        output_file="{output_file_path}/{output_file_name}".format(
-            output_file_path=output_file_path,
-            output_file_name=output_file_name,
-        )
-
         # Dump
         with open(output_file, 'w') as f:
             json.dump(data_to_serialize, f, indent=4)
+        return
+    
+    def import_shelf_buttons(self, shelf_name, input_file):
+        """Import all buttons listed into a .JSON file and add them to the given
+        shelf."""
+        # Load data
+        with open(input_file, 'r') as f:
+            imported_data=json.load(f)
+
+        # Create each button
+        for button_data_dict in imported_data:
+            self.create_button(
+                shelf_name=shelf_name,
+                toolname=button_data_dict['toolname'],
+                tooltip=button_data_dict['tooltip'],
+                icon=button_data_dict['icon_full_path'],
+                icon_label=button_data_dict['icon_label'],
+                source_type=button_data_dict['source_type'],
+                command_string=button_data_dict['command_string'],
+            )
         return
     #
 
