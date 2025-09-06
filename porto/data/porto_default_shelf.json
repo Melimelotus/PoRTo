@@ -2,7 +2,7 @@
     {
         "toolname": "Syspath",
         "tooltip": "add porto folder to syspath",
-        "icon_full_path": "pythonFamily.png",
+        "icon": "pythonFamily.png",
         "icon_label": "syspath",
         "source_type": "python",
         "command_string": "import sys\nsys.path.append('D:/User/Lisa/3D/PORTO/porto')"
@@ -10,7 +10,7 @@
     {
         "toolname": "IncrementCurrentFile",
         "tooltip": "Increment current file",
-        "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/incrementSave.png",
+        "icon": "{porto_root_dir}/icons/incrementSave.png",
         "icon_label": "",
         "source_type": "python",
         "command_string": "from library import mayaUtils\nmayaUtils.MayaFile().increment_current_file()"
@@ -18,7 +18,7 @@
     {
         "toolname": "Node Editor",
         "tooltip": "Display and edit relationships among nodes of the scene",
-        "icon_full_path": "menuIconWindow.png",
+        "icon": "menuIconWindow.png",
         "icon_label": "NE",
         "source_type": "mel",
         "command_string": "NodeEditorWindow"
@@ -26,7 +26,7 @@
     {
         "toolname": "Component Editor",
         "tooltip": "Edit various component values for the selected object(s)",
-        "icon_full_path": "menuIconWindow.png",
+        "icon": "menuIconWindow.png",
         "icon_label": "CpEd",
         "source_type": "mel",
         "command_string": "ComponentEditor"
@@ -34,7 +34,7 @@
     {
         "toolname": "SARN",
         "tooltip": "Rename objects in scene",
-        "icon_full_path": "menuIconModify.png",
+        "icon": "menuIconModify.png",
         "icon_label": "SaRN",
         "source_type": "mel",
         "command_string": "SearchAndReplaceNames"
@@ -42,7 +42,7 @@
     {
         "toolname": "Cluster",
         "tooltip": "Creates a transform driven deformation for a set of points on an object (CVs, vertices, or lattice points).",
-        "icon_full_path": "cluster.png",
+        "icon": "cluster.png",
         "icon_label": "",
         "source_type": "mel",
         "command_string": "CreateCluster"
@@ -50,7 +50,7 @@
     {
         "toolname": "Locator",
         "tooltip": "Create a locator object on the grid",
-        "icon_full_path": "locator.png",
+        "icon": "locator.png",
         "icon_label": "",
         "source_type": "mel",
         "command_string": "CreateLocator"
@@ -58,7 +58,7 @@
     {
         "toolname": "parentConstraint",
         "tooltip": "Parent constraint options",
-        "icon_full_path": "parentConstraint.png",
+        "icon": "parentConstraint.png",
         "icon_label": "pac",
         "source_type": "mel",
         "command_string": "ParentConstraintOptions"
@@ -66,7 +66,7 @@
     {
         "toolname": "pointConstraint",
         "tooltip": "Point constraint options",
-        "icon_full_path": "posConstraint.png",
+        "icon": "posConstraint.png",
         "icon_label": "poc",
         "source_type": "mel",
         "command_string": "PointConstraintOptions"
@@ -74,7 +74,7 @@
     {
         "toolname": "orientConstraint",
         "tooltip": "Orient constraint options",
-        "icon_full_path": "orientConstraint.png",
+        "icon": "orientConstraint.png",
         "icon_label": "orc",
         "source_type": "mel",
         "command_string": "OrientConstraintOptions"
@@ -82,7 +82,7 @@
     {
         "toolname": "aimConstraint",
         "tooltip": "Aim constraint options",
-        "icon_full_path": "aimConstraint.png",
+        "icon": "aimConstraint.png",
         "icon_label": "amc",
         "source_type": "mel",
         "command_string": "AimConstraintOptions"
@@ -90,7 +90,7 @@
     {
         "toolname": "scaleConstraint",
         "tooltip": "Scale constraint options",
-        "icon_full_path": "scaleConstraint.png",
+        "icon": "scaleConstraint.png",
         "icon_label": "scc",
         "source_type": "mel",
         "command_string": "ScaleConstraintOptions"
@@ -98,7 +98,7 @@
     {
         "toolname": "LocatorToController",
         "tooltip": "Create basic controller hierarchies from selected locs",
-        "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/locatorToController.png",
+        "icon": "{porto_root_dir}/icons/locatorToController.png",
         "icon_label": "",
         "source_type": "python",
         "command_string": "from maya import cmds\nfrom library import mayaUtils\n\nselection_list=cmds.ls(sl=True)\n\nfor selected in selection_list:\n    name_base=selected[:-4]\n    print(name_base)\n    print(isinstance(name_base, str))\n    \n    controller_name=name_base+'_ctl'\n    cmds.circle(name=controller_name, degree=1)\n    \n    joint_name=name_base+'_jnt'\n    cmds.select(controller_name, replace=True)\n    cmds.joint(name=joint_name)\n    \n    parentspace_name=name_base+'_parentspace_grp'\n    mayaUtils.insert_parent(controller_name, parentspace_name)\n    \n    position_name=name_base+'_position_grp'\n    mayaUtils.insert_parent(parentspace_name, position_name)\n    \n    cmds.delete(\n        cmds.parentConstraint(selected, position_name, mo=False)\n    )"
@@ -106,7 +106,7 @@
     {
         "toolname": "ColorChangerUI",
         "tooltip": "Change the color of the selected curves",
-        "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/colorChanger.png",
+        "icon": "{porto_root_dir}/icons/colorChanger.png",
         "icon_label": "",
         "source_type": "python",
         "command_string": "import importlib\n\nfrom library import curveShapes\nimportlib.reload(curveShapes)\n\ncurveShapes.ColorChangerUI().build_and_show()\n#"
@@ -114,7 +114,7 @@
     {
         "toolname": "ShapeChangerUI",
         "tooltip": "Change the shape of the selected curves",
-        "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/shapeChanger.png",
+        "icon": "{porto_root_dir}/icons/shapeChanger.png",
         "icon_label": "",
         "source_type": "python",
         "command_string": "import importlib\n\nfrom library import curveShapes\n\ncurveShapes.ShapeChangerUI().build_and_show()\n#"
@@ -122,7 +122,7 @@
     {
         "toolname": "Switch Line Width",
         "tooltip": "Switch lineWidth of selected shapes",
-        "icon_full_path": "D:/User/Lisa/3D/PORTO/porto/icons/lineWidth.png",
+        "icon": "{porto_root_dir}/icons/lineWidth.png",
         "icon_label": "width",
         "source_type": "python",
         "command_string": "import importlib\nfrom library import curveShapes\nfrom library import mayaUtils\n\nimportlib.reload(curveShapes)\nimportlib.reload(mayaUtils)\n\n@mayaUtils.apply_to_relative_selected_shapes\ndef execute(target):\n    curveShapes.switch_line_width(target)\n    \nexecute()"
@@ -130,7 +130,7 @@
     {
         "toolname": "PoseReaderUI",
         "tooltip": "Create a pose reader setup",
-        "icon_full_path": "angleBetween.svg",
+        "icon": "angleBetween.svg",
         "icon_label": "",
         "source_type": "python",
         "command_string": "import importlib\n\nfrom library import setups\nimportlib.reload(setups)\n\nsetups.PoseReaderUI().build_and_show()\n#"
@@ -138,7 +138,7 @@
     {
         "toolname": "Plane",
         "tooltip": "Polygon Plane",
-        "icon_full_path": "polyMesh.png",
+        "icon": "polyMesh.png",
         "icon_label": "",
         "source_type": "mel",
         "command_string": "CreatePolygonPlane"
@@ -146,7 +146,7 @@
     {
         "toolname": "Mirror",
         "tooltip": "Mirror",
-        "icon_full_path": "polyMirrorGeometry.png",
+        "icon": "polyMirrorGeometry.png",
         "icon_label": "",
         "source_type": "mel",
         "command_string": "MirrorPolygonGeometry"
@@ -154,7 +154,7 @@
     {
         "toolname": "NURBS Plane",
         "tooltip": "NURBS Plane",
-        "icon_full_path": "plane.png",
+        "icon": "plane.png",
         "icon_label": "",
         "source_type": "mel",
         "command_string": "CreateNURBSPlane"
@@ -162,7 +162,7 @@
     {
         "toolname": "rebuildSurface",
         "tooltip": "Rebuild surfaces options",
-        "icon_full_path": "rebuildSurface.png",
+        "icon": "rebuildSurface.png",
         "icon_label": "rebuild",
         "source_type": "mel",
         "command_string": "RebuildSurfacesOptions"
@@ -170,7 +170,7 @@
     {
         "toolname": "Add Influence",
         "tooltip": "Add influence options",
-        "icon_full_path": "menuIconSkinning.png",
+        "icon": "menuIconSkinning.png",
         "icon_label": "addInf",
         "source_type": "mel",
         "command_string": "AddInfluenceOptions"
@@ -178,7 +178,7 @@
     {
         "toolname": "Remove Unused Influences",
         "tooltip": "Select the skin and unused joints and influences will be disconnected to improve performance.",
-        "icon_full_path": "menuIconSkinning.png",
+        "icon": "menuIconSkinning.png",
         "icon_label": "RUI",
         "source_type": "mel",
         "command_string": "RemoveUnusedInfluences"
@@ -186,7 +186,7 @@
     {
         "toolname": "Copy Vertex Weights",
         "tooltip": "Copy the weight of a vertex to paste it onto other vertices",
-        "icon_full_path": "menuIconSkinning.png",
+        "icon": "menuIconSkinning.png",
         "icon_label": "CVW",
         "source_type": "mel",
         "command_string": "CopyVertexWeights"
@@ -194,7 +194,7 @@
     {
         "toolname": "Paste Vertex Weights",
         "tooltip": "Paste the weight of a copied vertex onto other vertices",
-        "icon_full_path": "menuIconSkinning.png",
+        "icon": "menuIconSkinning.png",
         "icon_label": "PVW",
         "source_type": "mel",
         "command_string": "PasteVertexWeights"
@@ -202,7 +202,7 @@
     {
         "toolname": "CopySkin",
         "tooltip": "Copy skin weights options",
-        "icon_full_path": "menuIconSkinning.png",
+        "icon": "menuIconSkinning.png",
         "icon_label": "copy",
         "source_type": "mel",
         "command_string": "CopySkinWeightsOptions"
@@ -210,7 +210,7 @@
     {
         "toolname": "MirrorSkin",
         "tooltip": "Mirror skin weights options",
-        "icon_full_path": "menuIconSkinning.png",
+        "icon": "menuIconSkinning.png",
         "icon_label": "mirror",
         "source_type": "mel",
         "command_string": "MirrorSkinWeightsOptions"
@@ -218,7 +218,7 @@
     {
         "toolname": "copyJointOrient",
         "tooltip": "copy joint orientation of first selected joint",
-        "icon_full_path": "pythonFamily.png",
+        "icon": "pythonFamily.png",
         "icon_label": "copyJointOrient",
         "source_type": "python",
         "command_string": "from maya import cmds\n\nselection_list=cmds.ls(sl=True)\n\nfor axis in ['X', 'Y', 'Z']:\n    cmds.setAttr(selection_list[1]+'.jointOrient'+axis, cmds.getAttr(selection_list[0]+'.jointOrient'+axis))"
@@ -226,7 +226,7 @@
     {
         "toolname": "Reset Transformation Values",
         "tooltip": "Reset transform values on selected nodes",
-        "icon_full_path": "pythonFamily.png",
+        "icon": "pythonFamily.png",
         "icon_label": "reset",
         "source_type": "python",
         "command_string": "import importlib\n\nfrom library import mayaUtils\n\n@mayaUtils.apply_to_selection\ndef execute(target):\n    mayaUtils.reset_transform_values(target)\n    \nexecute()\n#"
@@ -234,7 +234,7 @@
     {
         "toolname": "label",
         "tooltip": "tooltip",
-        "icon_full_path": "menuIconEdit.png",
+        "icon": "menuIconEdit.png",
         "icon_label": "icon label",
         "source_type": "mel",
         "command_string": "Undo"

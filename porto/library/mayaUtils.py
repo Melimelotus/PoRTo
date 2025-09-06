@@ -280,7 +280,7 @@ class Shelf():
                 shelf_name=shelf_name,
                 toolname=button_data_dict['toolname'],
                 tooltip=button_data_dict['tooltip'],
-                icon=button_data_dict['icon_full_path'],
+                icon=button_data_dict['icon'],
                 icon_label=button_data_dict['icon_label'],
                 source_type=button_data_dict['source_type'],
                 command_string=button_data_dict['command_string'],
