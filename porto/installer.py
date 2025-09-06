@@ -30,8 +30,26 @@ def onMayaDroppedPythonFile(obj):
     '''
 
     # TODO deactivate unused plugins
+    # unloadPlugin()
+    # pluginInfo() pluginsInUse
+    # pluginInfo() autoload=False
     '''
-    Arnold
+    KEPT FOR NOW:
+    'invertShape','curveWarp','poseInterpolator', 'cacheEvaluator',
+    'ikSpringSolver','ik2Bsolver','sweep','Unfold3D','meshReorder',
+    'modelingToolkit','rotateHelper','MayaMuscle','matrixNodes','autoLoader',
+    'deformerEvaluator','sceneAssembly','polyBoolean','objExport','renderSetup',
+    'GPUBuiltInDeformer','ArubaTessellator','quatNodes','fbxmaya'
+    '''
+
+    '''
+    TO UNLOAD:
+    'MASH','Type','retargeterNodes','lookdevKit','gpuCache','drawUfe',
+    'shaderFXPlugin''ufeSupport','OneClick','mayaUsdPlugin','AbcImport',
+    'AbcExport','LookdevXMaya','ATFPlugin','svgFileTranslator',
+    'gameFbxExporter','hairPhysicalShader','GamePipeline',
+    'mayaCharacterization','mayaHIK','tiffFloatReader','OpenEXRLoader',
+    'xgenToolkit',
     '''
 
     # TODO save preferences
