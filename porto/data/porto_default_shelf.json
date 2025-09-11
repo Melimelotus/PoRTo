@@ -230,13 +230,5 @@
         "icon_label": "reset",
         "source_type": "python",
         "command_string": "import importlib\n\nfrom library import mayaUtils\n\n@mayaUtils.apply_to_selection\ndef execute(target):\n    mayaUtils.reset_transform_values(target)\n    \nexecute()\n#"
-    },
-    {
-        "toolname": "label",
-        "tooltip": "tooltip",
-        "icon": "menuIconEdit.png",
-        "icon_label": "icon label",
-        "source_type": "mel",
-        "command_string": "Undo"
     }
 ]
