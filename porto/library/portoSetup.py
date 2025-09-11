@@ -121,4 +121,43 @@ class PortoShelf(mayaUtils.Shelf): # TODO UPDATE SYSPATH COMMAND WITH CURRENT DI
             json.dump(data_to_serialize, f, indent=4)
         return
     #
+
+class PortoPlugins(mayaUtils.MayaPlugins):
+    """Methods to manage Maya plugins according to the PoRTo preferences.
+    Aims to improve performances and launch time by unloading plugins that are
+    never or rarely used.
+    """
+
+    def __init__(self):
+        mayaUtils.MayaPlugins().__init__()
+
+        porto_library_dir=os.path.dirname(__file__)
+        porto_root_dir=os.path.dirname(porto_library_dir)
+        self.default_plugins_file='{porto_root_dir}/data/porto_default_plugins.json'.format(porto_root_dir=porto_root_dir)
+        return
+
+    def manage_plugins(self):
+        """Unload plugins that are listed for removal."""
+        # Get data
+        loaded_plugins=self.list_loaded_plugins()
+        with open(self.default_plugins_file, 'r') as f:
+            plugins_to_unload=json.load(f)
+
+        # Check each plugin and unload if necessary
+        for loaded_plugin in loaded_plugins:
+            # Check
+            if loaded_plugin not in plugins_to_unload:
+                continue
+            # Unload
+            self.unload_plugin(loaded_plugin)
+        return
+    
+    def export_plugins_list_as_new_default(self, plugins_list):
+        """Export a list of plugins as the new porto_default_plugins.json"""
+        # Dump
+        with open(self.default_plugins_file, 'w') as f:
+            json.dump(plugins_list, f, indent=4)
+        return
+    # 
+
 #

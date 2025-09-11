@@ -182,6 +182,40 @@ class MayaFile():
     #
 
 
+class MayaPlugins():
+    """Methods to manage Maya plugins."""
+
+    def __init__(self):
+        pass
+        return
+
+    def list_loaded_plugins(self):
+        """List all plugins loaded into Maya."""
+        loaded_plugins=cmds.pluginInfo(query=True, listPlugins=True)
+        return loaded_plugins
+    
+    def unload_plugin(self, plugin_name):
+        """Unload plugin from Maya and prevent it from loading on launch. Skip
+        and warn if plugin is already being used."""
+        # Check
+        plugins_in_use=cmds.pluginInfo(query=True, pluginsInUse=True) or []
+        if plugin_name in plugins_in_use:
+            message=[
+                "MayaPlugins.unload_plugin(): plugin '{plugin_name}' ".format(plugin_name=plugin_name),
+                "could not be removed. Already used in the scene."
+            ]
+            cmds.warning(''.join(message))
+            return False
+        
+        # Unload
+        plugin_path=cmds.pluginInfo(plugin_name, query=True, path=True)
+        cmds.pluginInfo(plugin_path, edit=True, autoload=False)
+
+        cmds.unloadPlugin(plugin_name)
+        return
+    # 
+
+
 class Shelf():
     """Holds methods to handle shelves in Maya."""
     
