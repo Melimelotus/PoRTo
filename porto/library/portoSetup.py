@@ -16,7 +16,7 @@ class PortoShelf(mayaUtils.Shelf): # TODO UPDATE SYSPATH COMMAND WITH CURRENT DI
     def __init__(self):
         mayaUtils.Shelf().__init__()
         self.shelf_name='PoRTo'
-        self.shelf_index=10 # Shelves numerotation start at 1, not 0
+        self.shelf_index=7 # Shelves numerotation start at 1, not 0
 
         porto_library_dir=os.path.dirname(__file__)
         porto_root_dir=os.path.dirname(porto_library_dir)
@@ -30,6 +30,7 @@ class PortoShelf(mayaUtils.Shelf): # TODO UPDATE SYSPATH COMMAND WITH CURRENT DI
         the porto_default_shelf.json."""
         self.create_shelf()
         self.populate_shelf()
+        self.reorder_shelf()
         return
 
     def create_shelf(self):
@@ -46,11 +47,18 @@ class PortoShelf(mayaUtils.Shelf): # TODO UPDATE SYSPATH COMMAND WITH CURRENT DI
         # Create shelf
         cmds.shelfLayout(self.shelf_name, parent=shelves_parent_layout)
 
-        # Reorder shelf
-        if "Customs" in shelves:
-            target_index=shelves.index("Customs")+1 # Shelves numerotation starts at 1, not 0
-        else:
-            target_index=self.shelf_index
+        # Set shelf as active shelf
+        cmds.tabLayout(shelves_parent_layout, edit=True, selectTab=self.shelf_name)
+        return
+    
+    def reorder_shelf(self):
+        """Reorder the PoRTo shelf to its default_index."""
+        # Get UI data
+        shelves_parent_layout=mel.eval('$temp=$gShelfTopLevel')
+        shelves=cmds.tabLayout(shelves_parent_layout, query=True, childArray=True)
+
+        # Reorder
+        target_index=self.shelf_index
         current_index=len(shelves)+1 # Shelves numerotation starts at 1, not 0
 
         cmds.tabLayout(
@@ -59,10 +67,8 @@ class PortoShelf(mayaUtils.Shelf): # TODO UPDATE SYSPATH COMMAND WITH CURRENT DI
             moveTab=[current_index, target_index]
         )
 
-        # Set shelf as active shelf
-        cmds.tabLayout(shelves_parent_layout, edit=True, selectTab=self.shelf_name)
         return
-    
+
     def populate_shelf(self):
         """Fill the PoRTo shelf with the buttons listed in the default shelf
         buttons file."""
@@ -134,6 +140,10 @@ class PortoPlugins(mayaUtils.MayaPlugins):
         porto_library_dir=os.path.dirname(__file__)
         porto_root_dir=os.path.dirname(porto_library_dir)
         self.default_plugins_file='{porto_root_dir}/data/porto_default_plugins.json'.format(porto_root_dir=porto_root_dir)
+
+        '''KEPT PLUGINS
+        - lookdevKit: holds floatConstant node
+        '''
         return
 
     def manage_plugins(self):
