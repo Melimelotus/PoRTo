@@ -1094,7 +1094,7 @@ class PoseReaderUI(PoseReader):
         )
         cmds.text("Master object:")
         self.master_name_controller=cmds.textField()
-        self.master_name_input_controller=cmds.button(label="ᐅᐅ")
+        self.master_name_input_controller=cmds.button(label=">>")
 
         cmds.setParent(controllers_layout)
         cmds.rowLayout(
@@ -1106,7 +1106,7 @@ class PoseReaderUI(PoseReader):
         )
         cmds.text("Reference object:")
         self.reference_name_controller=cmds.textField()
-        self.reference_name_input_controller=cmds.button(label="ᐅᐅ")
+        self.reference_name_input_controller=cmds.button(label=">>")
 
         # Name preview
         cmds.setParent(main_layout)
