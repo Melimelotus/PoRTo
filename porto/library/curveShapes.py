@@ -532,7 +532,7 @@ class ShapesColor():
         }
         return
     
-    def reset_color_override_attribute(node):
+    def reset_color_override_attribute(self, node):
         """Disable and clean all colorOverride attributes."""
         cmds.setAttr('{node}.overrideEnabled'.format(node=node), False)
         cmds.setAttr('{node}.overrideColor'.format(node=node), 0)
