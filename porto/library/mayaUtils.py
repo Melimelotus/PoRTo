@@ -135,7 +135,7 @@ class MayaFile():
 
         return data_dict
 
-    def increment_current_file(self):
+    def increment_current_file(self): #TODO ASK IF OVERWRITE EXISTING VERSION
         """Increment and save the current file."""
         message=["# MayaFile.increment_file(): "]
         file=self.get_current_file()
