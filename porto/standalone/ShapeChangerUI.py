@@ -1,18 +1,10 @@
-"""Module holding classes and functions that customize the shape, color or
-line width of curves.
-
-The coordinates of shapes do not go beyond -1 or 1 in any axis.
-"""
+# TODO prepare icons folder nearby and rework build_icons_path
 
 from collections import OrderedDict
 from functools import partial
 import os.path
 
 from maya import cmds
-import maya.utils as mutils
-
-from library import mayaUtils
-from library import utils
 
 
 class ShapesCoords():
@@ -33,7 +25,7 @@ class ShapesCoords():
             'pins': self.pins_coords_dict,
         }
 
-        self.merged_coords_dict=utils.merge_dicts([
+        self.merged_coords_dict=merge_dicts([
             self.flat_coords_dict,
             self.volume_coords_dict,
             self.arrows_coords_dict,
@@ -145,7 +137,7 @@ class ShapesCoords():
 
         # Clean
         cmds.delete(drawn_curve)
-        mayaUtils.rename_shapes(target)
+        rename_shapes(target)
         return
     
     def draw_shape(self, curve_name, curve_coords, linear=True, hide_from_history=True):
@@ -165,7 +157,7 @@ class ShapesCoords():
         # Clean history
         if not hide_from_history:
             return
-        mayaUtils.hide_shapes_from_history(curve_name)
+        hide_shapes_from_history(curve_name)
         return result
     
     def draw_all_shapes(self, linear=True):
@@ -269,7 +261,7 @@ class ShapeChangerUI(ShapesCoords):
             False: self.replace_shape,
         }
         for selected in selection_list:
-            with mayaUtils.SelectionPreservation():
+            with SelectionPreservation():
                 func_to_apply_dict[preserve_existing_shapes](
                     target=selected,
                     curve_name=shape_name,
@@ -402,7 +394,7 @@ class ShapeChangerUI(ShapesCoords):
         self.categoryTabs={}
         for shapeCategory in self.shape_types_list:
             # Build label, ensure first letter is uppercase
-            raw_label=utils.insert_whitespace_before_upper_letters(shapeCategory)
+            raw_label=insert_whitespace_before_upper_letters(shapeCategory)
             label=raw_label[0].upper() + raw_label[1:]
 
             # Create tab
@@ -492,306 +484,106 @@ class ShapeChangerUI(ShapesCoords):
     #
 
 
-class ShapesColor():
-    """Holds the data required to change the color override of Shapes."""
+# Decorators
+class SelectionPreservation(object):
+    """Decorator and context manager. Save a list of the selected objects and
+    try to select them again after executing the decorated function."""
 
-    def __init__(self):
-        self.mayaColorIndex={
-            0: [120,120,120],
-            1: [0,0,0],
-            2: [64,64,64],
-            3: [153,153,153],
-            4: [155,0,40],
-            5: [0,4,96],
-            6: [0,0,255],
-            7: [0,70,25],
-            8: [38,0,67],
-            9: [200,0,200],
-            10: [138,72,51],
-            11: [63,35,31],
-            12: [153,38,0],
-            13: [255,0,0],
-            14: [0,255,0],
-            15: [0,65,153],
-            16: [255,255,255],
-            17: [255,255,0],
-            18: [100,220,255],
-            19: [67,255,163],
-            20: [255,176,176],
-            21: [228,172,121],
-            22: [255,255,199],
-            23: [0,153,84],
-            24: [161,106,48],
-            25: [158,161,48],
-            26: [104,161,48],
-            27: [48,161,93],
-            28: [48,161,161],
-            29: [48,103,161],
-            30: [111,48,161],
-            31: [161,48,106],
-        }
+    def __enter__(self):
+        self.original_selection_list=cmds.ls(sl=True)
         return
     
-    def reset_color_override_attribute(self, node, *_):
-        """Disable and clean all colorOverride attributes."""
-        cmds.setAttr('{node}.overrideEnabled'.format(node=node), False)
-        cmds.setAttr('{node}.overrideColor'.format(node=node), 0)
-        cmds.setAttr('{node}.overrideRGBColors'.format(node=node), False)
-        cmds.setAttr('{node}.overrideColorRGB'.format(node=node), 0, 0, 0)
-        return
-    
-    def set_custom_override_color(self, targets_list, rgbValues, *_):
-        """Set a custom override color for the selection.
-            Args:
-                - targets_list: list of str.
-                    Objects whose overrideColor attributes must be changed.
-                - rgbValues: list of three float.
-                    Floats min value: 0
-                    Floats max value: 1
-        """
-        for target in targets_list:
-            # Activate override
-            cmds.setAttr('{target}.overrideEnabled'.format(target=target), True)
-            cmds.setAttr('{target}.overrideRGBColors'.format(target=target), True)
-
-            # Override with custom color
-            cmds.setAttr('{target}.overrideColorRGB'.format(target=target), *rgbValues)
-        return
-    
-    def set_index_override_color(self, targets_list, mayaColorIndex, *_):
-        """Set an index override color for the selection.
-            Args:
-                - targets_list: list of str.
-                    Objects whose overrideColor attributes must be changed.
-                - mayaColorIndex: int.
-        """
-        for target in targets_list:
-            # Activate override
-            cmds.setAttr('{target}.overrideEnabled'.format(target=target), True)
-            cmds.setAttr('{target}.overrideRGBColors'.format(target=target), False)
-
-            # Override with index
-            cmds.setAttr('{target}.overrideColor'.format(target=target), mayaColorIndex)
-        return
-    #
-
-
-class ColorChangerUI(ShapesColor):
-    """Interface. Change the override color attribute for the selected elements."""
-
-    def __init__(self):
-        ShapesColor.__init__(self)
-        self.window_name="colorChanger"
-
-        # Controllers are created and assigned later
-        self.apply_to_shapes_controller=''
-        self.custom_color_canvas=''
-        self.color_index_controllers_list=[]
-        self.hue_slider_controllers_list=[]
-        self.reset_overrides_controller=''
-
-        # Create window
-        if cmds.window(self.window_name, query=True, exists=True):
-            cmds.deleteUI(self.window_name)
-        cmds.window(self.window_name, title="Color Changer")
-        cmds.window(self.window_name, edit=True, width=300, height=253)
-        return
-    
-    def populate(self):
-        """Create the contents of the window."""
-        mainLayout=cmds.columnLayout(
-            adjustableColumn=True,
-            rowSpacing=5,
-            columnOffset=['both', 2],
-            columnAlign='left',
-        )
-        cmds.separator(style='none', h=5)
-
-        cmds.columnLayout(
-            adjustableColumn=True,
-            columnOffset=['left', 8],
-            columnAlign='left',
-        )
-        
-        # Description
-        cmds.text(label="Change the overrideColor attribute of selected objects.")
-        cmds.separator(style='none', h=5)
-
-        # Create controller: applyToShapesController
-        self.apply_to_shapes_controller=cmds.checkBox(label='Apply to Shapes', value=True)
-
-        cmds.setParent(mainLayout)
-        cmds.separator(style='in', h=2)
-
-        # Tabs: color index & custom color
-        tabs=cmds.tabLayout()
-
-        colorIndexTab=cmds.columnLayout(
-            adjustableColumn=True,
-            columnOffset=['both', 10],
-            columnAlign='center',
-            parent=tabs,
-        )
-        customColorTab=cmds.columnLayout(
-            adjustableColumn=True,
-            columnAlign='center',
-            parent=tabs,
-        )
-
-        cmds.tabLayout(
-            tabs,
-            edit=True,
-            tabLabel=(
-                (colorIndexTab, "Color index"),
-                (customColorTab, "Custom color"),
-            ),
-        )
-        
-        # Fill colorIndexTab
-        cmds.setParent(colorIndexTab)
-        cmds.separator(style='none', h=10)
-        cmds.gridLayout(numberOfRows=4, numberOfColumns=8, cellWidthHeight=(42,30))
-
-        # Create controllers: colorIndexButtons
-        for index in range(0,32):
-            # Get button background colors
-            '''Range of RGB color values must be [0.0;1.0] instead of [0;255].'''
-            backgroundColors=[
-                utils.normalise_color_value(value)
-                for value in self.mayaColorIndex[index]
-            ]
-            # Create button and append to list
-            indexButton=cmds.button(label=str(index), backgroundColor=backgroundColors)
-            self.color_index_controllers_list.append(indexButton)
-
-        cmds.separator(style='none', h=5, parent=colorIndexTab)
-
-        # Fill custom color tab
-        cmds.setParent(customColorTab)
-        cmds.separator(style='none', h=30)
-        cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnAttach=(1, 'both', 10))
-
-        self.custom_color_canvas=cmds.canvas(rgbValue=(0, 0, 0), width=60, height=60)
-
-        # Create controllers: hueSliders
-        cmds.rowColumnLayout(numberOfColumns=2, adjustableColumn=2, columnAttach=(1, 'right', 10))
-        for hue in ['R','G','B']:
-            cmds.text(hue, font='boldLabelFont', h=20)
-            hueSlider=cmds.intSliderGrp(field=True, min=0, max=255, value=0, step=1)
-            self.hue_slider_controllers_list.append(hueSlider)
-        
-        # Create controller: resetOverridesController
-        cmds.setParent(mainLayout)
-        self.reset_overrides_controller=cmds.button(label='Reset Override', width=120)
-        return
-    
-    def build_and_show(self):
-        """Build the interface and show the window."""
-        # Populate window
-        self.populate()
-
-        # Assign commands
-        cmds.button(
-            self.reset_overrides_controller,
-            edit=True,
-            command=self.reset_color_override_for_selection,
-        )
-
-        for hueSlider in self.hue_slider_controllers_list:
-            cmds.intSliderGrp(hueSlider, edit=True,
-                              changeCommand=self.apply_hue_sliders_values)
-
-        for index in range(0,32): # TODO attr/var holding button amount to use as max range
-            cmds.button(
-                self.color_index_controllers_list[index], edit=True,
-                command=partial(self.apply_color_index_values, index),
-            )
-        # Show window
-        cmds.showWindow(self.window_name)
-        return
-    
-    def apply_color_index_values(self, mayaColorIndex, *_):
-        """Apply the chosen color index value to the selection."""
-        self.set_index_override_color(
-            targets_list=self.get_objects_to_work_on(),
-            mayaColorIndex=mayaColorIndex,
-        )
-        mutils.processIdleEvents()
+    def __exit__(self, *args):
+        cmds.select(clear=True)
+        for previously_selected in self.original_selection_list:
+            if cmds.objExists(previously_selected):
+                cmds.select(previously_selected, add=True)
         return
 
-    def apply_hue_sliders_values(self, *_):
-        """Get the current hue slider values. Use them to update the color of
-        the customColorCanvas and the colorOverride of the selected objects."""
-        rgbValues=[]
-        for hueSlider in self.hue_slider_controllers_list:
-            value=cmds.intSliderGrp(hueSlider, query=True, value=True)
-            rgbValues.append(utils.normalise_color_value(value))
-
-        # Apply RGB values
-        self.update_canvas(rgbValues)
-        self.set_custom_override_color(targets_list=self.get_objects_to_work_on(),
-                                       rgbValues=rgbValues)
-        mutils.processIdleEvents()
-        return
-    
-    def get_objects_to_work_on(self):
-        """Return a list of objects to work on. Based on user's selection and
-        the current value of applyToShapesController.
-        """
-        # Get current selection
-        selection=cmds.ls(sl=True)
-        # Filter selection: remove objects without an overrideColor
-        filtered_list=[
-            selected
-            for selected in selection
-            if cmds.attributeQuery('overrideEnabled', n=selected, exists=True)
-        ]
-
-        applyToShapes=cmds.checkBox(self.apply_to_shapes_controller, query=True, value=True)
-        if not applyToShapes:
-            return filtered_list
-        
-        # ApplyToShapes behaviour requested: build list of shapes to work on
-        shapes=[]
-        for filtered in filtered_list:
-            if 'shape' in cmds.nodeType(filtered, inherited=True):
-                # Object itself is a shape
-                shapes.append(filtered)
-                continue
-            shapes+=mayaUtils.list_shapes_under_transform(filtered)
-        return shapes
-
-    def reset_color_override_for_selection(self, *_):
-        """Disable all overrideColor attributes for the selection."""
-        for object_to_work_on in self.get_objects_to_work_on():
-            self.reset_color_override_attribute(object_to_work_on)
-        return
-    
-    def update_canvas(self, rgb, *_):
-        """Update the color of the canvas with the given rgb values.
-            Args:
-                - rgb: list of three float.
-                    Floats min value: 0
-                    Floats max value: 1
-        """
-        cmds.canvas(self.custom_color_canvas, edit=True, rgbValue=rgb)
-        return
-
-    #
+    def __call__(self, func):
+        def wrapper(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+        return wrapper
 
 
-def switch_line_width(target_shape):
-    """Change the width attribute of target_shape to make it thicker or thinner.
-    
-    If the curve is thick (width value > 2): set width to 1.
-    If the curve is thin (width value < 2): set width to 2.
-    """
-    current_width=cmds.getAttr(target_shape+'.lineWidth')
-    new_width=1 if current_width >= 2 else 2
-    cmds.setAttr(
-        target_shape+'.lineWidth',
-        new_width,
-    )
+# Functions
+def merge_dicts(dicts_to_combine):
+    """Combine all the given dics into a single one."""
+    new_dict={}
+    for dict_to_combine in dicts_to_combine:
+        for key, value in dict_to_combine.items():
+            new_dict[key]=value
+    return new_dict
+
+
+def insert_whitespace_before_upper_letters(string):
+    """Insert a whitespace before all uppercase letters in the string."""
+    # Build list of all letters in the alphabet, uppercase
+    upper_letters_list=[
+        chr(ord('a')+index).upper()
+        for index in range(26)
+    ]
+
+    # Rebuild string with whitespaces
+    rebuilt_string=[
+        character if not character in upper_letters_list
+        else ' {character}'.format(character=character)
+        for character in string
+    ]
+
+    return ''.join(rebuilt_string)
+
+
+def hide_shapes_from_history(node_name):
+    """For all shapes parented under a node, set their isHistoricallyInteresting
+    attribute to False."""
+    shapes=cmds.listRelatives(node_name, s=True)
+    for shape in shapes:
+        cmds.setAttr(shape+'.isHistoricallyInteresting', False)
     return
 
+
+def list_shapes_under_transform(node):
+    """Return a list of all shapes under a given transform node."""
+    shapes=cmds.listRelatives(node, shapes=True)
+    if not shapes:
+        return []
+    return shapes
+
+
+def rename_shapes(transform):
+    """Rename all shapes under a transform.
+    
+    Best used for renaming controller shapes.
+    If several shapes are found, add an index to them so that they respect
+    the following format: '{transform}Shape{index}'.
+    """
+    # List all shapes under transform
+    shapes_list=list_shapes_under_transform(transform)
+    if not shapes_list:
+        # Nothing to rename
+        return
+    
+    # Rename
+    shapes_amount=len(shapes_list)
+    new_name_format='{transform}{shape_type}{index}'
+
+    for index, current_shape_name in enumerate(shapes_list, 1):
+        # Build name
+        shape_type='ShapeOrig' if 'Orig' in current_shape_name else 'Shape'
+        index='' if shapes_amount==1 else str(index)
+
+        new_name=new_name_format.format(
+            transform=transform,
+            shape_type=shape_type,
+            index=index,
+        )
+        # Rename
+        cmds.rename(current_shape_name, new_name)
+
+    return
+
+
+ShapeChangerUI().build_and_show()
 #
