@@ -11,7 +11,7 @@ from maya import cmds
 
 from data import nomenclature
 from data import portoPreferences
-from library import constraints
+from library.not_rehabilitated_yet import constraints
 from library import mayaUtils
 from library import naming
 from library import portoUtils

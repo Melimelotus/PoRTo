@@ -10,7 +10,7 @@ from maya.api import OpenMaya # API 2.0
 from data import portoPreferences
 from library import curveShapes
 from library import curveShapeSelector
-from library import constraints
+from library.not_rehabilitated_yet import constraints
 from library import mayaUtils
 from library import portoClasses
 from library import naming

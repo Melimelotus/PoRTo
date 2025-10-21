@@ -1,0 +1,23 @@
+[
+    "ATFPlugin",
+    "AbcExport",
+    "AbcImport",
+    "GamePipeline",
+    "LookdevXMaya",
+    "MASH",
+    "OneClick",
+    "OpenEXRLoader",
+    "Type",
+    "drawUfe",
+    "gameFbxExporter",
+    "gpuCache",
+    "hairPhysicalShader",
+    "mayaCharacterization",
+    "mayaHIK",
+    "mayaUsdPlugin",
+    "retargeterNodes",
+    "shaderFXPluginufeSupport",
+    "svgFileTranslator",
+    "tiffFloatReader",
+    "xgenToolkit"
+]
